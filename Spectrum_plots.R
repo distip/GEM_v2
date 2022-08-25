@@ -3,7 +3,7 @@ library(lme4)
 library(reshape2)
 library(rrBLUP)
 library(ggplot2)
-
+library(ggpubr)
 spectra <- read.csv("Raw_spectrum_merged")
 View(spectra)
 
@@ -29,7 +29,7 @@ spectra.sub.melt$band <- as.numeric(substr(spectra.sub.melt$band,2,5))
 
 spectra.sub.melt$band
 
-ggplot(data=spectra.sub.melt[which(spectra.sub.melt$Trt == 'LN'),], aes(band, reflectance, color=ASD)) + geom_line()
+ggplot(data=spectra.sub.melt[which(spectra.sub.melt$Trt == 'HN'),], aes(band, reflectance, color=ASD)) + geom_line()
 
 
 
@@ -39,7 +39,7 @@ calibration <- read.csv('calibration')
 View(calibration)
 
 colnames(calibration)
-calibration <- subset(calibration, select = -c(X, Unnamed..0 ))
+calibration <- subset(calibration, select = -c(X))
 
 calibration.melt <- melt(calibration, id.vars = c('PLOT.ID', 'ASD'))
 View(calibration.melt)
@@ -51,7 +51,19 @@ calibration.melt$band <- as.numeric(substr(calibration.melt$band, 2, 5))
 
 calibration.melt$band
 
+calibration.melt$ASD <-factor(calibration.melt$ASD)
 
-ggplot(data=calibration.melt[which(calibration.melt$ASD == 2),], aes(band, reflectance, color= ASD)) + geom_line()
 
+ggplot(data=calibration.melt, aes(band, reflectance, color=ASD)) + geom_line()
 
+anova <- aov(reflectance ~ PLOT.ID * ASD , data = calibration.melt[which(calibration.melt$band == '1000'),])
+summary(anova)
+
+par(mfrow=c(2,2))
+plot(anova)
+par(mfrow=c(1,1))
+
+two.way.plot <- ggplot(data=calibration.melt[which(calibration.melt$band == '1000'),], aes(x=ASD, y=reflectance, groupr=PLOT.ID))+
+  geom_point(cex=1.5, pch=1.0 , position=position_jitter(w=0.01, h=0))+
+  geom_line(aes(group = PLOT.ID), size=0.2)
+two.way.plot
