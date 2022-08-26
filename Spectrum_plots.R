@@ -15,10 +15,10 @@ spectra$year <- factor(spectra$year)
 spectra$genotype <- factor(spectra$genotype)
 spectra$note <- factor(spectra$note)
 spectra$Trt <- factor(spectra$Trt)
-
+spectra$ASD <- factor(spectra$ASD)
 spectra <- subset(spectra, select = -X)
 
-spectra.sub <- spectra[which(spectra$ASD %in% c(1,2)),]
+spectra.sub <- spectra #[which(spectra$ASD %in% c(1,2)),]
 spectra.sub.melt <- melt(spectra.sub, id.vars = c('PLOT.ID', 'Block' ,'Rep', 'Trt', 'year', 'genotype', 'note', 'Calibration', 'ASD'))
 View(spectra.sub.melt)
 
@@ -29,7 +29,7 @@ spectra.sub.melt$band <- as.numeric(substr(spectra.sub.melt$band,2,5))
 
 spectra.sub.melt$band
 
-ggplot(data=spectra.sub.melt[which(spectra.sub.melt$Trt == 'HN'),], aes(band, reflectance, color=ASD)) + geom_line()
+ggplot(data=spectra.sub.melt) + geom_line(aes(band, reflectance, color=Trt, alpha=0.4))
 
 
 
