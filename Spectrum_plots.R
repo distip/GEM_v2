@@ -4,6 +4,7 @@ library(reshape2)
 library(rrBLUP)
 library(ggplot2)
 library(ggpubr)
+library(tidyverse)
 spectra <- read.csv("Raw_spectrum_merged")
 View(spectra)
 
@@ -29,7 +30,10 @@ spectra.sub.melt$band <- as.numeric(substr(spectra.sub.melt$band,2,5))
 
 spectra.sub.melt$band
 
-ggplot(data=spectra.sub.melt) + geom_line(aes(band, reflectance, color=Trt, alpha=0.4))
+spectra.sub.melt.grouped <- spectra.sub.melt %>% group_by(genotype, band) %>% summarise(reflect=sum(reflectance))
+
+ggplot(data=spectra.sub.melt) + geom_line(aes(band, reflectance, color=Trt, alpha=0.4))+
+  labs(title = 'Leaf Spectra (Raw data)', x='bands', y='reflectance')
 
 
 
