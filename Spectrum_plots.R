@@ -30,9 +30,11 @@ spectra.sub.melt$band <- as.numeric(substr(spectra.sub.melt$band,2,5))
 
 spectra.sub.melt$band
 
-spectra.sub.melt.grouped <- spectra.sub.melt %>% group_by(genotype, band) %>% summarise(reflect=sum(reflectance))
+str(spectra.sub.melt)
 
-ggplot(data=spectra.sub.melt) + geom_line(aes(band, reflectance, color=Trt, alpha=0.4))+
+spectra.sub.melt.grouped <- spectra.sub.melt %>% group_by(genotype, band, Trt) %>% summarise(reflect=mean(reflectance, na.rm = TRUE))
+
+ggplot(data=spectra.sub.melt.grouped) + geom_line(aes(band, reflect, color=Trt, alpha=0.4))+
   labs(title = 'Leaf Spectra (Raw data)', x='bands', y='reflectance')
 
 
@@ -57,17 +59,41 @@ calibration.melt$band
 
 calibration.melt$ASD <-factor(calibration.melt$ASD)
 
+str(calibration.melt)
 
-ggplot(data=calibration.melt, aes(band, reflectance, color=ASD)) + geom_line()
+calibration.melt$PLOT.ID <- factor(calibration.melt$PLOT.ID)
+calibration.melt$band <- factor(calibration.melt$band)
 
-anova <- aov(reflectance ~ PLOT.ID * ASD , data = calibration.melt[which(calibration.melt$band == '1000'),])
+
+ggplot(data=calibration.melt[which(calibration.melt$ASD == '1'),], aes(band, reflectance)) + geom_line(color = 'green')
+
+pvals <- c()
+for(i in 350:2500) {
+  anova <- aov(reflectance ~ PLOT.ID * ASD , data = calibration.melt[which(calibration.melt$band == i),])
+  p <- summary(anova)[[1]][['Pr(>F)']][2]
+  pvals <- c(pvals, p)
+}
+
+pvals.df <- data.frame(c(350:2500), pvals)
+colnames(pvals.df)[1] <- 'band'
+
+ggplot(pvals.df) + geom_point(aes(band, pvals), colour='black', size=1, shape=1) + geom_hline(yintercept = 0.05, linetype='dashed', color='red') +
+  labs(title = 'p-values from ANOVA - comparing two ASDs')+ 
+  scale_y_continuous(breaks= c(0.00, 0.05, 0.25, 0.50, 0.75, 1.00))
+
+
+anova <- aov(reflectance ~ PLOT.ID * ASD , data = calibration.melt[which(calibration.melt$band == '2200'),])
 summary(anova)
+
+summary(anova)[[1]][['Pr(>F)']][2]
+
+anova[2][1]
 
 par(mfrow=c(2,2))
 plot(anova)
 par(mfrow=c(1,1))
 
-two.way.plot <- ggplot(data=calibration.melt[which(calibration.melt$band == '1000'),], aes(x=ASD, y=reflectance, groupr=PLOT.ID))+
+two.way.plot <- ggplot(data=calibration.melt[which(calibration.melt$band == '900'),], aes(x=ASD, y=reflectance, groupr=PLOT.ID))+
   geom_point(cex=1.5, pch=1.0 , position=position_jitter(w=0.01, h=0))+
   geom_line(aes(group = PLOT.ID), size=0.2)
 two.way.plot
