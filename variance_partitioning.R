@@ -21,7 +21,7 @@ spectra$ASD <- factor(spectra$ASD)
 spectra <- subset(spectra, select = -X)
 
 
-## calculating the BLUPs for spectra
+
 bands <- (colnames(spectra)[-c(1:9)])
 bands_df <-as.data.frame(colnames(spectra)[-c(1:9)])
 bands 
@@ -33,7 +33,7 @@ spectral.blups.list <- data.frame(levels(spectra$genotype))
 colnames(spectral.blups.list) <- 'genotype'
 
 temp <- spectra
-temp<-temp[, which(colnames(spectra) %in% c('PLOT.ID','genotype', 'Block', 'Trt', 'Rep', 'ASD', bands[2000]))]
+temp<-temp[, which(colnames(spectra) %in% c('PLOT.ID','genotype', 'Block', 'Trt', 'Rep', 'ASD', bands[1000]))]
 colnames(temp)[7] <- 'reflectance'
 
 
@@ -114,5 +114,7 @@ extractVarsLmm <- function(model, id_genotype = c("genotype"),
              var_res = var_res)
 }
 
-m <- lmer(reflectance ~ (Trt|genotype), temp)
+m <- lmer(reflectance ~ Trt + (Trt|genotype), data=temp)
 extractVarsLmm(m)
+
+
