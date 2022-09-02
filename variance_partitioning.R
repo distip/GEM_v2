@@ -30,11 +30,8 @@ colnames(bands_df) <- c('band', 'H2')
 bands.H2 <- bands_df
 
 spectral.blups.list <- data.frame(levels(spectra$genotype))
-colnames(spectral.blups.list) <- 'genotype'
 
-temp <- spectra
-temp<-temp[, which(colnames(spectra) %in% c('PLOT.ID','genotype', 'Block', 'Trt', 'Rep', 'ASD', bands[1000]))]
-colnames(temp)[7] <- 'reflectance'
+colnames(spectral.blups.list) <- 'genotype'
 
 
 
@@ -114,7 +111,37 @@ extractVarsLmm <- function(model, id_genotype = c("genotype"),
              var_res = var_res)
 }
 
-m <- lmer(reflectance ~ Trt + (Trt|genotype), data=temp)
-extractVarsLmm(m)
+var.part.list <- vector('list', length(bands))
+names(var.part.list) <- as.numeric(substr(as.character(bands), 2,5))
+
+values <- c()
+for(i in 1:length(bands)){
+  temp <- spectra
+  temp<-temp[, which(colnames(spectra) %in% c('PLOT.ID','genotype', 'Block', 'Trt', 'Rep', 'ASD', bands[i]))]
+  colnames(temp)[7] <- 'reflectance'
+  m <- lmer(reflectance ~ Trt + (Trt|genotype), data=temp)
+  extractVarsLmm(m)
+  LN <- extractVarsLmm(m)[[1]]/ sum(extractVarsLmm(m))
+  HN <- extractVarsLmm(m)[[2]]/ sum(extractVarsLmm(m))
+  Nitrate <- extractVarsLmm(m)[[3]]/ sum(extractVarsLmm(m))
+  Plasticity <- extractVarsLmm(m)[[4]]/ sum(extractVarsLmm(m))
+  Res <- extractVarsLmm(m)[[5]]/ sum(extractVarsLmm(m))
+  values <-  c(LN, HN, Nitrate, Plasticity, Res)
+  var.part.list[[i]] <- values
+  
+}
+
+var.part.list.melt <- melt(var.part.list)
+var.part.list.melt$source <- rep(c('LN', 'HN', 'Nitrate', 'Plasticity', 'Residual'), 10755/5)
+var.part.list.melt$source <- factor(var.part.list.melt$source)
+var.part.list.melt$band <- as.numeric(var.part.list.melt$band)
+colnames(var.part.list.melt) <- c('values', 'band', 'source')
 
 
+ggplot(var.part.list.melt, aes(fill= source, y=values, x=band)) +
+  geom_bar(position='fill', stat='identity', width = 1, alpha=0.8)+
+  theme_classic()+
+  theme(legend.background = element_rect(fill = '#FFCC66',color='grey50',  size=1))+
+  scale_fill_brewer(palette= 'Set3')+
+  labs(title = 'Variance Partitioning of Leaf Spectrum', y ='%', x='wavelengths')
+  
