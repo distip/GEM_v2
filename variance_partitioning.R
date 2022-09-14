@@ -134,8 +134,10 @@ for(i in 1:length(bands)){
 var.part.list.melt <- melt(var.part.list)
 var.part.list.melt$source <- rep(c('LN', 'HN', 'Nitrate', 'Plasticity', 'Residual'), 10755/5)
 var.part.list.melt$source <- factor(var.part.list.melt$source)
-var.part.list.melt$band <- as.numeric(var.part.list.melt$band)
 colnames(var.part.list.melt) <- c('values', 'band', 'source')
+var.part.list.melt$band <- as.numeric(var.part.list.melt$band)
+
+
 
 
 ggplot(var.part.list.melt, aes(fill= source, y=values, x=band)) +
@@ -143,5 +145,13 @@ ggplot(var.part.list.melt, aes(fill= source, y=values, x=band)) +
   theme_classic()+
   theme(legend.background = element_rect(fill = '#FFCC66',color='grey50',  size=1))+
   scale_fill_brewer(palette= 'Set3')+
-  labs(title = 'Variance Partitioning of Leaf Spectrum', y ='%', x='wavelengths')
+  labs(title = 'Variance Partitioning of Leaf Spectrum After Spatial Correction', y ='%', x='wavelengths')
   
+
+
+
+
+
+
+
+
