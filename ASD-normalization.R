@@ -58,7 +58,7 @@ df.stats$sd <- as.numeric(df.stats$sd)
 
 for(j in 1:2){
   for (i in 12:length(colnames(spectra))){
-    normalized <- (spectra[which(spectra$ASD==j), i] - df.stats[which(df.stats$ASD == j),][(i-11), 'median'])/df.stats[which(df.stats$ASD == j),][(i-11), 'sd']
+    normalized <- (spectra[which(spectra$ASD==j), i] - df.stats[which(df.stats$ASD == j),][(i-11), 'mean'])/df.stats[which(df.stats$ASD == j),][(i-11), 'sd']
     ASD.list[[j]][,i] <- normalized
   }
 }
