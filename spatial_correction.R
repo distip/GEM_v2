@@ -14,6 +14,7 @@ library(tidyverse)
 spectra <- read.csv("Raw_spectrum_merged")
 View(spectra)
 
+
 str(spectra)
 
 spectra$Rep <- factor(spectra$Rep)
@@ -32,6 +33,9 @@ spectra <- subset(spectra, select = -c(X, Unnamed..0))
 
 spectra.new <- spectra
 spectra.new$Block <- factor(spectra.new$Block, levels= c('2', '4', '1', '3'))
+
+
+hist(spectra$X730)
 
                                                  ### heat map of the field for one wavelngth ###
 
@@ -52,18 +56,22 @@ ggplot(spectra.new, aes(rows, ranges, color=X730)) +
 spectra <- add_column(spectra, pos = numFactor(scale(as.numeric(spectra$rows)), scale(as.numeric(spectra$ranges))), .after = 'ranges' )
 spectra <- add_column(spectra, ID = factor(rep(1, nrow(spectra))), .after= 'pos')
 
-data <- spectra[which(spectra$Block == 4),]
+
 data <- spectra
-m1 <-glmmTMB(X730 ~ (1|genotype), data= data)
-m2 <-glmmTMB(X730 ~ (1|genotype) + ar1(pos + 0 | ID) , data= data)
-m3 <-glmmTMB(X730 ~ (1|genotype) + (1|ASD) + ar1(pos + 0 | ID), data=data)
+m1 <-glmmTMB(X1000 ~ (1|genotype), data= data)
+m2 <- glmmTMB(X1000 ~ (1|genotype) + (1|Trt), data= data)
+m3 <-glmmTMB(X1000 ~ (1|genotype) + (1|Trt) + (1|ASD) , data= data)
+m4 <-glmmTMB(X1000 ~ (1|genotype) + (1|Trt) + (1|ASD) + ar1(pos + 0 | ID), data=data)
+m5 <-glmmTMB(X1000 ~ (1|genotype) + (1|Trt) + (1|ASD) + ar1(pos + 0 | Block), data=data)
+m6 <- glmmTMB(X1000 ~ (1|genotype) + (1|Trt) + (1|genotype:Trt) ,  data= data)
+m7 <- glmmTMB(X1000 ~ (1|genotype) + (1|Trt) + (1|genotype:Trt) + (1|ASD) + ar1(pos + 0 | Block)  ,  data= data)
 
 
-anova(m1,m2,m3)
+anova(m1,m2,m3,m4,m5,m6,m7)
 
                             ####################### Calculation of BLUPs form the m2 (only spatial) for each blocks ########################
 
-levels(spectra$Block)
+levels(spectra$Trt)
 
 spectra.list <- vector('list' , 4)
 spectra.list
@@ -118,7 +126,7 @@ View(spectra.blups.list)
 
 ### As before, names() can be used to track the appropriate Ns.
 
-names(spectra.blups.list) <- c('1', '2', '3', '4')
+names(spectra.blups.list) <- c('1', '2' , '3', '4')
 ### The following nested loop will first go through the list of dataframes each containing
 ### hyperspectral data from a single N.
 
@@ -131,12 +139,12 @@ for(i in 1:length(spectra.list)){
     ### The hyperspectral data from just one band can be pulled out along with the field
     ### design variables. 
     
-    temp <- temp[, which(colnames(temp) %in% c('genotype', 'pos', 'ID', 'ASD', 'Block', bands[j]))]
+    temp <- temp[, which(colnames(temp) %in% c('genotype', 'pos', 'ID', 'ASD', 'Trt', bands[j]))]
     colnames(temp)[6] <- 'reflectance'
     
     ### The BLUP model is 
     
-    spectrum.blup.mod <- glmmTMB(reflectance ~ (1|genotype) + ar1(pos + 0 | ID) , data= temp)
+    spectrum.blup.mod <- glmmTMB(reflectance ~ (1|genotype) + (1|ASD) + ar1(pos + 0 | ID), data=temp)
     
     
     ### The variance components can be extracted to calculate broad-sense heritability.
@@ -215,20 +223,20 @@ spectra.blups.sub.melt <- read.csv('fullspectra_plots.csv')
 
 
 spectra_columns <- subset(spectra, select = c(1:13))
-merged_1 <- merge(spectra_columns[which(spectra_columns$Block== '1'),], spectra.blups.list[['1']], by = 'genotype')
-merged_2 <- merge(spectra_columns[which(spectra_columns$Block== '2'),], spectra.blups.list[['2']], by = 'genotype')
-merged_3 <- merge(spectra_columns[which(spectra_columns$Block== '3'),], spectra.blups.list[['3']], by = 'genotype')
-merged_4 <- merge(spectra_columns[which(spectra_columns$Block== '4'),], spectra.blups.list[['4']], by = 'genotype')
+merged_1 <- merge(spectra_columns[which(spectra_columns$Trt== 'HN'),], spectra.blups.list[['HN']], by = 'genotype')
+merged_2 <- merge(spectra_columns[which(spectra_columns$Trt== 'LN'),], spectra.blups.list[['LN']], by = 'genotype')
 
-blups_merged <- merged_1 %>% full_join(merged_2) %>% full_join(merged_3) %>% full_join(merged_4) 
+blups_merged <- merged_1 %>% full_join(merged_2)
 blups_merged$Block <- factor(blups_merged$Block, levels= c('2', '4', '1', '3'))
+
+
 
 ggplot(blups_merged, aes(rows, ranges, color=X730)) + 
   geom_point(size=1.3) +
   scale_y_continuous(name='ranges', limits = c(1,13))+
   geom_rect( aes(xmin=0.4, xmax = 51, ymin = 7.5, ymax = 12.5), fill=NA, colour='red')+
   #annotate('rect', xmin=0, xmax = 50, ymin = 7.5, ymax = 12.5, alpha= .1)+
-  facet_wrap(Block~Trt)+
+  facet_wrap(~Trt)+
   scale_colour_viridis() +
   labs(title = 'Range and Row effects on leaf spectrum after spatial correction', caption = ' Blocks 1 and 4 = + N , 2 and 3 = -N\nred rectangles are the hybrids ')+
   theme_classic()
@@ -376,7 +384,7 @@ for(i in 1:length(bands)){
   Res <- extractVarsLmm(m)[[5]]/ sum(extractVarsLmm(m))
   values <-  c(LN, HN, Nitrate, Plasticity, Res)
   var.part.list[[i]] <- values
-  
+  print(i)
 }
 
 
@@ -385,6 +393,7 @@ var.part.list.melt$source <- rep(c('LN', 'HN', 'Nitrate', 'Plasticity', 'Residua
 var.part.list.melt$source <- factor(var.part.list.melt$source)
 var.part.list.melt$band <- as.numeric(var.part.list.melt$band)
 colnames(var.part.list.melt) <- c('values', 'band', 'source')
+var.part.list.melt$band <- as.numeric(var.part.list.melt$band)
 
 
 ggplot(var.part.list.melt, aes(fill= source, y=values, x=band)) +

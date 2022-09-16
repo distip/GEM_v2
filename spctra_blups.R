@@ -18,7 +18,7 @@ spectra$note <- factor(spectra$note)
 spectra$Trt <- factor(spectra$Trt)
 spectra$ASD <- factor(spectra$ASD)
 
-spectra <- subset(spectra, select = -X)
+spectra <- subset(spectra, select = -c(X, Unnamed..0))
 
 ## Visualise for one genotype
 spectra.sub <- spectra[which(spectra$genotype == 'BGEM-0292-S') ,]
@@ -62,7 +62,7 @@ for(i in 1:length(bands)){
   temp<-temp[, which(colnames(spectra) %in% c('genotype', 'Block', 'Trt', 'Rep', 'ASD', bands[i]))]
   colnames(temp)[6] <- 'reflectance'
   
-  spectrum.blup.mod<-lmer(reflectance~(1|genotype)+(1|ASD)+(1|Trt:Rep)+(1|Block:Trt:Rep) , data=temp)
+  spectrum.blup.mod<-lmer(reflectance~(1|genotype)+(1|Trt:Block), data=temp)
 
   Vg <- data.frame(VarCorr(spectrum.blup.mod))$vcov[1]
   Ve <- data.frame(VarCorr(spectrum.blup.mod))$vcov[5]
@@ -117,7 +117,7 @@ View(spectra.list)
 ### contains a different combination of the bands and N. An "H2" column can be added
 ### to store the broad-sense heritability estimates. 
 
-bands <- colnames(spectra)[-c(1:9)]
+bands <- colnames(spectra)[-c(1:13)]
 bands
 
 Trt <- as.character(levels(spectra$Trt))
@@ -166,12 +166,12 @@ for(i in 1:length(spectra.list)){
     
     ### The BLUP model is 
     
-    spectrum.blup.mod <- lmer(reflectance ~ (1|genotype)+(1|ASD)+(1|Block)+(1|Rep:Block), data = temp)
+    spectrum.blup.mod <- lmer(reflectance ~ (1|genotype)+(1|ASD)+(1|Block:Rep) , data = temp)
     
     ### The variance components can be extracted to calculate broad-sense heritability.
     
     Vg <- data.frame(VarCorr(spectrum.blup.mod))$vcov[1]
-    Ve <- data.frame(VarCorr(spectrum.blup.mod))$vcov[5]
+    Ve <- data.frame(VarCorr(spectrum.blup.mod))$vcov[4]
     H2 <- Vg/(Vg+(Ve/2))
     
     
@@ -219,7 +219,27 @@ bands.H2$bands<- as.numeric(substr(bands.H2$bands,2,5))
 ggplot(bands.H2, aes(bands, H2, color=Trt)) + geom_line()+
   labs(title = 'Broad Sense Heritabilities Under Different Nitrogen Applications')
 
+names(spectra.blups.list[['HN']]) <- sub('.x', '', names(spectra.blups.list[['HN']]))
 
+spectra_columns <- subset(spectra, select = c(1:11))
+merged_1 <- merge(spectra_columns[which(spectra_columns$Trt== 'HN'),], spectra.blups.list[['HN']], by = 'genotype')
+merged_2 <- merge(spectra_columns[which(spectra_columns$Trt== 'LN'),], spectra.blups.list[['LN']], by = 'genotype')
+
+
+blups_merged <- merged_1 %>% full_join(merged_2)
+blups_merged$Block <- factor(blups_merged$Block, levels= c('2', '4', '1', '3'))
+
+
+ggplot(blups_merged, aes(rows, ranges, color=X730)) + 
+  geom_point(size=1.3) +
+  scale_y_continuous(name='ranges', limits = c(1,13))+
+  geom_rect( aes(xmin=0.4, xmax = 51, ymin = 7.5, ymax = 12.5), fill=NA, colour='red')+
+  #annotate('rect', xmin=0, xmax = 50, ymin = 7.5, ymax = 12.5, alpha= .1)+
+  facet_wrap(~Trt)+
+  scale_colour_viridis() +
+  labs(title = 'Range and Row effects on leaf spectrum after spatial correction \n (1|genotype)+(1|ASD)+(1|Block:Rep)', caption = ' Blocks 1 and 4 = + N , 2 and 3 = -N\nred rectangles are the hybrids ')+
+  theme_classic()
+#theme(strip.background = element_rect(color = 'black', fill = Trt))
 
 
 ### To look at the hyperspectral data from multiple genotypes on a single data, the first 
