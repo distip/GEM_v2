@@ -4,6 +4,7 @@ library(lme4)
 library(reshape2)
 library(rrBLUP)
 library(ggplot2)
+library(tidyverse)
 
 spectra <- read.csv("Raw_spectrum_merged")
 View(spectra)
@@ -117,7 +118,7 @@ View(spectra.list)
 ### contains a different combination of the bands and N. An "H2" column can be added
 ### to store the broad-sense heritability estimates. 
 
-bands <- colnames(spectra)[-c(1:13)]
+bands <- colnames(spectra)[-c(1:11)]
 bands
 
 Trt <- as.character(levels(spectra$Trt))
@@ -228,7 +229,7 @@ merged_2 <- merge(spectra_columns[which(spectra_columns$Trt== 'LN'),], spectra.b
 
 blups_merged <- merged_1 %>% full_join(merged_2)
 blups_merged$Block <- factor(blups_merged$Block, levels= c('2', '4', '1', '3'))
-
+write.csv(blups_merged, './spectra_blups.csv', row.names = FALSE)
 
 ggplot(blups_merged, aes(rows, ranges, color=X730)) + 
   geom_point(size=1.3) +
