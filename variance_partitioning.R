@@ -18,12 +18,12 @@ spectra$note <- factor(spectra$note)
 spectra$Trt <- factor(spectra$Trt)
 spectra$ASD <- factor(spectra$ASD)
 
-spectra <- subset(spectra, select = -X)
+spectra <- subset(spectra, select = -c(X, Unnamed..0))
 
 
 
-bands <- (colnames(spectra)[-c(1:9)])
-bands_df <-as.data.frame(colnames(spectra)[-c(1:9)])
+bands <- (colnames(spectra)[-c(1:11)])
+bands_df <-as.data.frame(colnames(spectra)[-c(1:11)])
 bands 
 bands_df$H2 <- NA
 colnames(bands_df) <- c('band', 'H2')
@@ -119,7 +119,7 @@ for(i in 1:length(bands)){
   temp <- spectra
   temp<-temp[, which(colnames(spectra) %in% c('PLOT.ID','genotype', 'Block', 'Trt', 'Rep', 'ASD', bands[i]))]
   colnames(temp)[7] <- 'reflectance'
-  m <- lmer(reflectance ~ Trt + (Trt|genotype), data=temp)
+  m <- lmer(reflectance ~Trt + (Trt|genotype), data=temp)
   extractVarsLmm(m)
   LN <- extractVarsLmm(m)[[1]]/ sum(extractVarsLmm(m))
   HN <- extractVarsLmm(m)[[2]]/ sum(extractVarsLmm(m))
@@ -128,7 +128,7 @@ for(i in 1:length(bands)){
   Res <- extractVarsLmm(m)[[5]]/ sum(extractVarsLmm(m))
   values <-  c(LN, HN, Nitrate, Plasticity, Res)
   var.part.list[[i]] <- values
-  
+  print(i)
 }
 
 var.part.list.melt <- melt(var.part.list)
@@ -145,7 +145,7 @@ ggplot(var.part.list.melt, aes(fill= source, y=values, x=band)) +
   theme_classic()+
   theme(legend.background = element_rect(fill = '#FFCC66',color='grey50',  size=1))+
   scale_fill_brewer(palette= 'Set3')+
-  labs(title = 'Variance Partitioning of Leaf Spectrum After Spatial Correction', y ='%', x='wavelengths')
+  labs(title = 'Variance Partitioning of Leaf Spectrum' , subtitle = 'lmer(reflectance ~ Trt + genotype + (Trt|genotype), data=temp)' , y ='%', x='wavelengths')
   
 
 
