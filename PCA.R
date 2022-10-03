@@ -15,17 +15,29 @@ spectra$note <- factor(spectra$note)
 spectra$Trt <- factor(spectra$Trt)
 spectra$ASD <- factor(spectra$ASD)
 
+## Adding a new column named 'Group' indicating hybrids and inbreds
+
+group <- c()
+for(i in 1:length(blups$note)){
+  note <- blups$note[i]
+  if(note == 'Hybrid'){
+    group <- c(group, 'Hybrid')
+  }
+  else
+    group <- c(group, 'Inbred')
+}
+View(group)
+
+blups <- blups %>% mutate(Group = group, .before= note)
 
 
-res.pca <- prcomp(blups[,12:length(colnames(blups))], scale = FALSE)
+res.pca <- prcomp(blups[,13:length(colnames(blups))], scale = FALSE)
 
 basic_plot <- fviz_pca_ind(res.pca, label= 'none')
 
-ggplot(cbind(basic_plot$data, blups[,c('Trt', 'note')]), aes(x=x, y=y, col = note, shape=Trt))+
-  geom_point()+
-  labs(x='Dim1 (82.7%)', y= 'Dim2 (12.4%)')
-
-
+ggplot(cbind(basic_plot$data, blups[,c('Trt', 'Group')]), aes(x=x, y=y, col = Group, shape=Trt))+
+  geom_point(size=1.7)+
+  labs(title = 'PCA', x='Dim1 (82.7%)', y= 'Dim2 (12.4%)')
 
 
 View(basic_plot$data)
