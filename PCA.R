@@ -35,9 +35,12 @@ res.pca <- prcomp(blups[,13:length(colnames(blups))], scale = FALSE)
 
 basic_plot <- fviz_pca_ind(res.pca, label= 'none')
 
-ggplot(cbind(basic_plot$data, blups[,c('Trt', 'Group')]), aes(x=x, y=y, col = Group, shape=Trt))+
-  geom_point(size=1.7)+
-  labs(title = 'PCA', x='Dim1 (82.7%)', y= 'Dim2 (12.4%)')
+ggplot(cbind(basic_plot$data, blups[,c('Trt', 'Group')]), aes(x=x, y=y, shape=Trt, col = Group ))+
+  geom_point(size=2)+
+  labs(title = 'PCA', x='Dim1 (82.7%)', y= 'Dim2 (12.4%)')+
+  stat_ellipse(type= 't')+
+  theme_bw(14)
+
 
 
 View(basic_plot$data)
