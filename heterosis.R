@@ -106,7 +106,7 @@ ggplot(data = blups.mean[which(blups.mean$Trt == 'LN'),],aes(x = band, y = refle
 
 
 
-                    ########################   CALCULATION OF HETEROSIS   #####################################
+                    ########################   CALCULATION OF MID-PARENT HETEROSIS   #####################################
 ## heterosis calculation for low nitrogen condition
 blups_LN <- blups[blups$Trt == 'LN' & blups$Rep == 1 ,]
 
@@ -220,6 +220,134 @@ p4 <- ggplot(data=data, aes(x=bands, group= male)) +
   geom_line(aes(y=mean.heterosis, color=male), size = 0.7)+
   geom_ribbon(aes(ymin=mean.heterosis-sd.heterosis , ymax=mean.heterosis+sd.heterosis , fill=male),alpha=0.4)+
   labs(title = 'Mid-parent Heterosis in HN', caption = '**Envelopes represent 1 sd from the mean')
+p4
+
+model <- lm(heterosis ~ 1 , heterosis.val_HN)
+confint(model,level = 0.95)
+
+
+
+
+
+
+
+                ########################   CALCULATION OF Better-PARENT HETEROSIS   #####################################
+## heterosis calculation for low nitrogen condition
+blups_LN <- blups[blups$Trt == 'LN' & blups$Rep == 1 ,]
+
+het <- blups_LN %>% filter(grepl(' X ', genotype))
+
+heterosis.val_LN <- expand.grid(bands= 350:2500, genotype = het$genotype)
+heterosis.val_LN$heterosis <- NA
+
+for(i in 1:length(het$genotype)){
+  for(j in 12:length(colnames(het))){
+    hybrid <- as.character(het$genotype[i])
+    female <- strsplit(as.character(het$genotype[i]), ' X ')[[1]][1]
+    male <- strsplit(as.character(het$genotype[i]), ' X ')[[1]][2]
+    if(mean(blups_LN$genotype %in% c(female)) > 0 & mean(blups_LN$genotype %in% c(male) > 0 )) {
+      female2 <- mean(blups_LN[which(blups_LN$genotype == female ), j])
+      male2 <- mean(blups_LN[which(blups_LN$genotype == male ), j])
+      better <- max(c(female2, male2))
+      hybrid2 <- mean(blups_LN[which(blups_LN$genotype == hybrid ), j])
+      heterosis <- (hybrid2-better)/better*100
+      heterosis.val_LN[heterosis.val_LN$bands == j+338 & heterosis.val_LN$genotype == hybrid , 'heterosis'] <- heterosis
+      print(i)
+      print(j)
+    }
+    else
+      print('pass')
+  }
+}
+
+males <- c()
+for(i in 1:length(heterosis.val_LN$genotype)){
+  male <- strsplit(as.character(heterosis.val_LN$genotype[i]), ' X ')[[1]][2]
+  males<- c(males,  male)
+  print(i)
+}
+heterosis.val_LN$male <- males
+heterosis.val_LN <- na.omit(heterosis.val_LN)
+
+p1 <-ggplot(data=heterosis.val_LN , aes(x=bands, y=heterosis, group=genotype, colour=male)) + 
+  geom_line(size=0.4, alpha=0.6)+
+  labs(title='Better-Parent Heterosis in Low-Nitrogen', x='bands', y='heterosis %')
+p1
+
+
+p2 <- ggplot(data=heterosis.val_LN[heterosis.val_LN$male %in% c('B73', 'Mo17'),], aes(x=bands, y=heterosis, group=genotype, colour=male)) + 
+  geom_line(size=0.4, alpha=0.6)+
+  labs(title='Better-Parent Heterosis in Low-Nitrogen', x='bands', y='heterosis %')
+
+
+data <- heterosis.val_LN[heterosis.val_LN$male %in% c('B73', 'Mo17'),] %>% group_by(male,bands) %>% 
+  summarise(mean.heterosis = mean(heterosis, na.rm=TRUE), sd.heterosis = sd(heterosis, na.rm = TRUE), se.heterosis= sd(heterosis, na.rm=TRUE)/sqrt(length(heterosis)), 
+            max = max(heterosis, na.rm = TRUE), min = min(heterosis, na.rm = TRUE))
+View(data) 
+
+p4 <- ggplot(data=data, aes(x=bands, group= male)) +
+  geom_line(aes(y=mean.heterosis, color=male), size = 0.7)+
+  geom_ribbon(aes(ymin=mean.heterosis-sd.heterosis , ymax=mean.heterosis+sd.heterosis , fill=male),alpha=0.4)+
+  labs(title = 'Better-parent Heterosis in LN', caption = '**Envelopes represent 1 sd from the mean')
+p4
+######## heterosis calculation for high nitrogen condition ###########
+
+## heterosis calculation for high nitrogen condition
+blups_HN <- blups[blups$Trt == 'HN' & blups$Rep == 1 ,]
+
+het <- blups_HN %>% filter(grepl(' X ', genotype))
+
+heterosis.val_HN <- expand.grid(bands= 350:2500, genotype = het$genotype)
+heterosis.val_HN$heterosis <- NA
+
+for(i in 1:length(het$genotype)){
+  for(j in 12:length(colnames(het))){
+    hybrid <- as.character(het$genotype[i])
+    female <- strsplit(as.character(het$genotype[i]), ' X ')[[1]][1]
+    male <- strsplit(as.character(het$genotype[i]), ' X ')[[1]][2]
+    if(mean(blups_HN$genotype %in% c(female)) > 0 & mean(blups_HN$genotype %in% c(male) > 0 )) {
+      female2 <- mean(blups_HN[which(blups_HN$genotype == female ), j])
+      male2 <- mean(blups_HN[which(blups_HN$genotype == male ), j])
+      better <- max(c(female2, male2))
+      hybrid2 <- mean(blups_HN[which(blups_HN$genotype == hybrid ), j])
+      heterosis <- (hybrid2-better)/better*100
+      heterosis.val_HN[heterosis.val_HN$bands == j+338 & heterosis.val_HN$genotype == hybrid , 'heterosis'] <- heterosis
+      print(i)
+      print(j)
+    }
+    else
+      print('pass')
+  }
+}
+
+males <- c()
+for(i in 1:length(heterosis.val_HN$genotype)){
+  male <- strsplit(as.character(heterosis.val_HN$genotype[i]), ' X ')[[1]][2]
+  males<- c(males,  male)
+  print(i)
+}
+heterosis.val_HN$male <- males
+heterosis.val_HN <- na.omit(heterosis.val_HN)
+heterosis.val_HN$male <- factor(heterosis.val_HN$male)
+copy <- heterosis.val_HN
+
+p2 <- ggplot(data=heterosis.val_HN[heterosis.val_HN$male %in% c('B73', 'Mo17'),], aes(x=bands, y=heterosis, group=genotype, colour=male)) + 
+  geom_line(size=0.4, alpha=0.6)+
+  labs(title='Better-Parent Heterosis in High-Nitrogen', x='bands', y='heterosis %')
+p2
+
+p3 <- ggplot(data=heterosis.val_HN[heterosis.val_HN$male %in% c('B73', 'Mo17'),], aes(x=bands, y=heterosis, colour=male)) +
+  stat_smooth(method='loess', span = 0.1, se=FALSE, aes(fill=male), alpha=0.5)
+
+data <- heterosis.val_HN[heterosis.val_HN$male %in% c('B73', 'Mo17'),] %>% group_by(male,bands) %>% 
+  summarise(mean.heterosis = mean(heterosis, na.rm=TRUE), sd.heterosis = sd(heterosis, na.rm = TRUE), se.heterosis= sd(heterosis, na.rm=TRUE)/sqrt(length(heterosis)), 
+            max = max(heterosis, na.rm = TRUE), min = min(heterosis, na.rm = TRUE))
+
+
+p4 <- ggplot(data=data, aes(x=bands, group= male)) +
+  geom_line(aes(y=mean.heterosis, color=male), size = 0.7)+
+  geom_ribbon(aes(ymin=mean.heterosis-sd.heterosis , ymax=mean.heterosis+sd.heterosis , fill=male),alpha=0.4)+
+  labs(title = 'Better-parent Heterosis in HN', caption = '**Envelopes represent 1 sd from the mean')
 p4
 
 model <- lm(heterosis ~ 1 , heterosis.val_HN)

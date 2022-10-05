@@ -29,6 +29,7 @@ for(i in 1:length(blups$note)){
 View(group)
 
 blups <- blups %>% mutate(Group = group, .before= note)
+blups <- blups %>% filter(Rep == 1)
 
 
 res.pca <- prcomp(blups[,13:length(colnames(blups))], scale = FALSE)
