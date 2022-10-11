@@ -5,6 +5,10 @@ library(reshape2)
 library(rrBLUP)
 library(ggplot2)
 library(tidyverse)
+library(viridisLite)
+library(viridis)
+
+
 
 spectra <- read.csv("Raw_spectrum_merged")
 View(spectra)
@@ -19,7 +23,7 @@ spectra$note <- factor(spectra$note)
 spectra$Trt <- factor(spectra$Trt)
 spectra$ASD <- factor(spectra$ASD)
 
-spectra <- subset(spectra, select = -c(X, Unnamed..0))
+spectra <- subset(spectra, select = -c(X))
 
 ## Visualise for one genotype
 spectra.sub <- spectra[which(spectra$genotype == 'BGEM-0292-S') ,]
@@ -167,7 +171,7 @@ for(i in 1:length(spectra.list)){
     
     ### The BLUP model is 
     
-    spectrum.blup.mod <- lmer(reflectance ~ (1|genotype)+(1|ASD)+(1|Block:Rep) , data = temp)
+    spectrum.blup.mod <- lmer(reflectance ~ (1|genotype)+(1|ASD)+(1|Rep) , data = temp)
     
     ### The variance components can be extracted to calculate broad-sense heritability.
     
@@ -218,7 +222,8 @@ bands.H2$bands<- as.numeric(substr(bands.H2$bands,2,5))
 ### To plot different lines for each of the different N application, the color can be set to "Trt".
 
 ggplot(bands.H2, aes(bands, H2, color=Trt)) + geom_line()+
-  labs(title = 'Broad Sense Heritabilities Under Different Nitrogen Applications')
+  labs(title = 'Broad Sense Heritabilities Under Different Nitrogen Applications')+
+  theme_bw()
 
 names(spectra.blups.list[['HN']]) <- sub('.x', '', names(spectra.blups.list[['HN']]))
 
@@ -230,6 +235,42 @@ merged_2 <- merge(spectra_columns[which(spectra_columns$Trt== 'LN'),], spectra.b
 blups_merged <- merged_1 %>% full_join(merged_2)
 blups_merged$Block <- factor(blups_merged$Block, levels= c('2', '4', '1', '3'))
 write.csv(blups_merged, './spectra_blups.csv', row.names = FALSE)
+blups_merged <- read.csv('spectra_blups.csv')
+
+str(blups_merged)
+
+blups_merged$genotype <- factor(blups_merged$genotype)
+blups_merged$PLOT.ID <- factor(blups_merged$PLOT.ID)
+blups_merged$rows <- factor(blups_merged$rows)
+blups_merged$ranges <- factor(blups_merged$ranges)
+blups_merged$Block <- factor(blups_merged$Block)
+blups_merged$Rep <- factor(blups_merged$Rep)
+blups_merged$Trt  <- factor(blups_merged$Trt)
+blups_merged$year <- factor(blups_merged$year)
+blups_merged$note <- factor(blups_merged$note)
+blups_merged$Calibration <- factor(blups_merged$Calibration)
+blups_merged$ASD <- factor(blups_merged$ASD)
+
+blups_merged$note <- NA
+
+for(i in 1:length(blups_merged$genotype)){
+  gen <- as.character(blups_merged$genotype[i])
+  if(grepl(' X ', gen)){
+    blups_merged$note[i] <- 'Hybrid'
+  }
+  else{
+    blups_merged$note[i] <- 'Inbred'
+  }
+}
+
+spectra.blups.melt.2 <- melt(blups_merged, id.vars = c('PLOT.ID', 'genotype','rows', 'ranges', 'Block' ,'Rep', 'Trt', 'year', 'note', 'Calibration', 'ASD'))
+a <- sapply(strsplit(as.character(spectra.blups.melt.2$variable), '[.]'), '[[', 1)
+spectra.blups.melt.2$wavelength <- as.numeric(substr(a,2,5))
+
+data <- spectra.blups.melt.2[spectra.blups.melt.2$Trt == 'HN',] %>% group_by(wavelength,note) %>% 
+  summarise(mean.ref = mean(value, na.rm=TRUE), sd.ref = sd(value, na.rm = TRUE), se.ref= sd(value, na.rm=TRUE)/sqrt(length(value)), 
+            max = max(value, na.rm = TRUE), min = min(value, na.rm = TRUE))
+
 
 ggplot(blups_merged, aes(rows, ranges, color=X730)) + 
   geom_point(size=1.3) +
@@ -238,7 +279,7 @@ ggplot(blups_merged, aes(rows, ranges, color=X730)) +
   #annotate('rect', xmin=0, xmax = 50, ymin = 7.5, ymax = 12.5, alpha= .1)+
   facet_wrap(~Trt)+
   scale_colour_viridis() +
-  labs(title = 'Range and Row effects on leaf spectrum after spatial correction \n (1|genotype)+(1|ASD)+(1|Block:Rep)', caption = ' Blocks 1 and 4 = + N , 2 and 3 = -N\nred rectangles are the hybrids ')+
+  labs(title = 'Spatial Map of leaf spectrum after BLUPs \n (1|genotype)+(1|ASD)+(1|Rep)', caption = ' Blocks 1 and 4 = + N , 2 and 3 = -N\nred rectangles represent the hybrids ')+
   theme_classic()
 #theme(strip.background = element_rect(color = 'black', fill = Trt))
 
@@ -262,6 +303,22 @@ colnames(spectra.blups.sub.melt)[4] <- 'Trt'
 
 write.csv(spectra.blups.sub.melt, './fullspectra_plots.csv', row.names = FALSE )
 spectra.blups.sub.melt <- read.csv('fullspectra_plots.csv')
+
+data <- spectra.blups.sub.melt %>% group_by(wavelength,Trt) %>% 
+  summarise(mean.ref = mean(value, na.rm=TRUE), sd.ref = sd(value, na.rm = TRUE), se.ref= sd(value, na.rm=TRUE)/sqrt(length(value)), 
+            max = max(value, na.rm = TRUE), min = min(value, na.rm = TRUE))
+
+data$wavelength <- as.numeric(data$wavelength)
+
+plt_blups <- ggplot(data=data, aes(x=wavelength, group= note)) +
+  geom_line(aes(y=mean.ref, color=note), size = 0.6)+
+  geom_ribbon(aes(ymin=mean.ref-sd.ref , ymax=mean.ref+sd.ref , fill=note),alpha=0.3)+
+  labs(title = 'Leaf Spectra inbred vs hybrids under HN', caption = '**Envelopes represent 1 sd from the mean')+
+  theme_bw()
+
+plt_blups
+
+
 
 ggplot(spectra.blups.sub.melt[which(spectra.blups.sub.melt$Trt == 'HN'),], aes(wavelength, value, color=genotype)) +
   geom_line(size=0.3)+

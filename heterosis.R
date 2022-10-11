@@ -129,8 +129,9 @@ for(i in 1:length(het$genotype)){
       print(i)
       print(j)
     }
-    else
+    else {
       print('pass')
+    }
   }
  }
 
@@ -248,9 +249,9 @@ for(i in 1:length(het$genotype)){
     if(mean(blups_LN$genotype %in% c(female)) > 0 & mean(blups_LN$genotype %in% c(male) > 0 )) {
       female2 <- mean(blups_LN[which(blups_LN$genotype == female ), j])
       male2 <- mean(blups_LN[which(blups_LN$genotype == male ), j])
-      better <- max(c(female2, male2))
+      lower <- min(c(female2, male2))
       hybrid2 <- mean(blups_LN[which(blups_LN$genotype == hybrid ), j])
-      heterosis <- (hybrid2-better)/better*100
+      heterosis <- (lower-hybrid2)/lower*100
       heterosis.val_LN[heterosis.val_LN$bands == j+338 & heterosis.val_LN$genotype == hybrid , 'heterosis'] <- heterosis
       print(i)
       print(j)
@@ -308,9 +309,9 @@ for(i in 1:length(het$genotype)){
     if(mean(blups_HN$genotype %in% c(female)) > 0 & mean(blups_HN$genotype %in% c(male) > 0 )) {
       female2 <- mean(blups_HN[which(blups_HN$genotype == female ), j])
       male2 <- mean(blups_HN[which(blups_HN$genotype == male ), j])
-      better <- max(c(female2, male2))
+      lower <- max(c(female2, male2))
       hybrid2 <- mean(blups_HN[which(blups_HN$genotype == hybrid ), j])
-      heterosis <- (hybrid2-better)/better*100
+      heterosis <- (lower-hybrid2)/lower*100
       heterosis.val_HN[heterosis.val_HN$bands == j+338 & heterosis.val_HN$genotype == hybrid , 'heterosis'] <- heterosis
       print(i)
       print(j)
@@ -330,6 +331,9 @@ heterosis.val_HN$male <- males
 heterosis.val_HN <- na.omit(heterosis.val_HN)
 heterosis.val_HN$male <- factor(heterosis.val_HN$male)
 copy <- heterosis.val_HN
+
+heterosis.val_LN$male <- males
+heterosis.val_LN <- na.omit(heterosis.val_LN)
 
 p2 <- ggplot(data=heterosis.val_HN[heterosis.val_HN$male %in% c('B73', 'Mo17'),], aes(x=bands, y=heterosis, group=genotype, colour=male)) + 
   geom_line(size=0.4, alpha=0.6)+

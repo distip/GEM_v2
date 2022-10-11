@@ -1,6 +1,8 @@
 library(FactoMineR)
+library(ggplot2)
 library(factoextra)
 library(tidyverse)
+
 
 spectra <- read.csv("Raw_spectrum_merged")
 View(spectra)
@@ -16,7 +18,23 @@ spectra$Trt <- factor(spectra$Trt)
 spectra$ASD <- factor(spectra$ASD)
 
 ## Adding a new column named 'Group' indicating hybrids and inbreds
+blups <- read.csv('spectra_blups.csv')
 
+str(blups)
+
+blups$genotype <- as.factor(blups$genotype)
+blups$PLOT.ID <- as.factor(blups$PLOT.ID)
+blups$rows <- as.factor(blups$rows)
+blups$ranges <- as.factor(blups$ranges)
+blups$Block <- as.factor(blups$Block)
+blups$Rep <- as.factor(blups$Rep)
+blups$Trt <- as.factor(blups$Trt)
+blups$year <- as.factor(blups$year)
+blups$note <-as.factor(blups$note)
+blups$Calibration <- as.factor(blups$Calibration)
+blups$ASD <- as.factor(blups$ASD)
+
+## adding 'hybrid or inbred' column
 group <- c()
 for(i in 1:length(blups$note)){
   note <- blups$note[i]
@@ -29,17 +47,91 @@ for(i in 1:length(blups$note)){
 View(group)
 
 blups <- blups %>% mutate(Group = group, .before= note)
-blups <- blups %>% filter(Rep == 1)
+blups <- blups %>% filter(Rep == 1) #removing rep1
+View(blups)
 
 
-res.pca <- prcomp(blups[,13:length(colnames(blups))], scale = FALSE)
+
+## Adding male and female columns for hybrids and inbreds (only female)
+male <- c()
+female <- c()
+for (i in 1:length(blups$genotype)){
+  id <- blups$genotype[i]
+  if(grepl(' X ', id) == TRUE){
+    f <- strsplit(as.character(id), ' X ')[[1]][1]
+    m <- strsplit(as.character(id), ' X ')[[1]][2]
+    female <- c(female, f)
+    male <- c(male, m)
+  }
+  else {
+    male <- c(male, NA)
+    female <- c(female, id)
+  }
+    
+}
+
+## Adding SS and NSS information for inbreds
+
+
+blups <- blups %>% mutate(het_grp = NA, .before=note) # adding a new column for heterotic groups 
+
+hybrids <- blups %>% filter(grepl(' X ', genotype)) #applying a filter for the genotypes containing ' X '
+
+for (i in 1:length(hybrids$genotype)){
+  id <- hybrids$genotype[i]
+  inbred <- strsplit(as.character(id), ' X ')[[1]][1]
+  if(strsplit(as.character(id), ' X ')[[1]][2] == 'B73'){
+    blups[blups$genotype == inbred, "het_grp"] <- 'NSS'
+  }
+  else if(strsplit(as.character(id), ' X ')[[1]][2] == 'Mo17'){
+    blups[blups$genotype == inbred, "het_grp"] <- 'SS'
+  }
+  else if(id == 'B73'){
+    blups[blups$genotype == id, "het_grp"] <- 'NSS'
+  }
+  else {
+    blups[blups$genotype == inbred, "het_grp"] <- 'other'
+  }
+}
+
+
+for (i in 1:length(blups$genotype)){
+  id <- blups$genotype[i]
+  if(id == 'B73'){
+    blups[blups$genotype == id, "het_grp"] <- 'B73'
+  }
+  else if (id %in% c('Mo17', 'MO17')){
+    blups[blups$genotype == id, "het_grp"] <- 'Mo17'
+  }
+  else{
+    print('empty')
+  }
+}
+
+
+res.pca <- prcomp(blups[blups$Group == 'Inbred' & !is.na(blups$het_grp) , 14:length(colnames(blups))], scale = FALSE)
 
 basic_plot <- fviz_pca_ind(res.pca, label= 'none')
 
-ggplot(cbind(basic_plot$data, blups[,c('Trt', 'Group')]), aes(x=x, y=y, shape=Trt, col = Group ))+
+ggplot(cbind(basic_plot$data, blups[blups$Group=='Inbred' & !is.na(blups$het_grp), c('Trt', 'Group', 'het_grp')]), aes(x=x, y=y, shape=Trt, col = het_grp ))+
   geom_point(size=2)+
   labs(title = 'PCA', x='Dim1 (82.7%)', y= 'Dim2 (12.4%)')+
-  stat_ellipse(type= 't')+
+  stat_ellipse()+
+  theme_bw(14)
+
+
+
+
+blups <- blups %>% mutate(famale = female, male=male, .before = note)
+
+res.pca <- prcomp(blups[blups$Group== 'Hybrid',15:length(colnames(blups))], scale = FALSE)
+
+basic_plot <- fviz_pca_ind(res.pca, label= 'none')
+
+ggplot(cbind(basic_plot$data, blups[blups$Group== 'Hybrid',c('Trt', 'Group', 'male')]), aes(x=x, y=y, shape=Group, col = male ))+
+  geom_point(size=2)+
+  labs(title = 'PCA', x='Dim1 (82.7%)', y= 'Dim2 (12.4%)')+
+  #stat_ellipse(type= 't')+
   theme_bw(14)
 
 
@@ -85,10 +177,11 @@ fviz_pca_var(res.pca, select.var = list(cos2 = 0.00006))
               #### PCA of Raw Spectra #####
 
 spectra2  <-  spectra %>% drop_na()
+spectra <- subset(spectra, select = -c(X, Unnamed..0))
 
-res.pca <- prcomp(spectra2[spectra2$Trt == 'LN', 12:length(colnames(spectra2))], scale = FALSE)
+res.pca <- prcomp(spectra2[, 12:length(colnames(spectra2))], scale = FALSE)
 
 fviz_pca_ind(res.pca, geom="point")
 
 
-fviz_pca_ind(res.pca, label="none", habillage=spectra2[spectra2$Trt == 'LN', c('ASD')])
+fviz_pca_ind(res.pca, label="none", habillage=spectra2$ASD)
