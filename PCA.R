@@ -17,7 +17,7 @@ spectra$note <- factor(spectra$note)
 spectra$Trt <- factor(spectra$Trt)
 spectra$ASD <- factor(spectra$ASD)
 
-## Adding a new column named 'Group' indicating hybrids and inbreds
+
 blups <- read.csv('spectra_blups.csv')
 
 str(blups)
@@ -185,3 +185,117 @@ fviz_pca_ind(res.pca, geom="point")
 
 
 fviz_pca_ind(res.pca, label="none", habillage=spectra2$ASD)
+
+
+
+
+
+                            ###### PCA of blues ######
+
+blues <- read_csv('spectra_blues.csv')
+blues <- as.data.frame(blues)
+blues <- blues %>% select(-contains(c('.x', '.y', '.z')))
+                          
+blues <- blues[ , colSums(is.na(blues))==0]
+
+
+str(blues)
+
+
+blues$genotype <- as.factor(blues$genotype)
+blues$PLOT.ID <- as.factor(blues$PLOT.ID)
+blues$rows <- as.factor(blues$rows)
+blues$ranges <- as.factor(blues$ranges)
+blues$Block <- as.factor(blues$Block)
+blues$Rep <- as.factor(blues$Rep)
+blues$Trt <- as.factor(blues$Trt)
+blues$year <- as.factor(blues$year)
+blues$note <-as.factor(blues$note)
+blues$Calibration <- as.factor(blues$Calibration)
+blues$ASD <- as.factor(blues$ASD)
+
+## adding 'hybrid or inbred' column
+group <- c()
+for(i in 1:length(blues$note)){
+  note <- blues$note[i]
+  if(note == 'Hybrid'){
+    group <- c(group, 'Hybrid')
+  }
+  else
+    group <- c(group, 'Inbred')
+}
+View(group)
+
+blues <- blues %>% mutate(Group = group, .before= note)
+#blues <- blues %>% filter(Rep == 1) #removing rep1
+View(blues)
+
+
+
+## Adding male and female columns for hybrids and inbreds (only female)
+male <- c()
+female <- c()
+for (i in 1:length(blues$genotype)){
+  id <- blues$genotype[i]
+  if(grepl(' X ', id) == TRUE){
+    f <- strsplit(as.character(id), ' X ')[[1]][1]
+    m <- strsplit(as.character(id), ' X ')[[1]][2]
+    female <- c(female, f)
+    male <- c(male, m)
+  }
+  else {
+    male <- c(male, NA)
+    female <- c(female, id)
+  }
+  
+}
+
+## Adding SS and NSS information for inbreds
+
+
+blues <- blues %>% mutate(het_grp = NA, .before=note) # adding a new column for heterotic groups 
+
+hybrids <- blues %>% filter(grepl(' X ', genotype)) #applying a filter for the genotypes containing ' X '
+
+for (i in 1:length(hybrids$genotype)){
+  id <- hybrids$genotype[i]
+  inbred <- strsplit(as.character(id), ' X ')[[1]][1]
+  if(strsplit(as.character(id), ' X ')[[1]][2] == 'B73'){
+    blues[blues$genotype == inbred, "het_grp"] <- 'NSS'
+  }
+  else if(strsplit(as.character(id), ' X ')[[1]][2] == 'Mo17'){
+    blues[blues$genotype == inbred, "het_grp"] <- 'SS'
+  }
+  else if(id == 'B73'){
+    blues[blues$genotype == id, "het_grp"] <- 'NSS'
+  }
+  else {
+    blues[blues$genotype == inbred, "het_grp"] <- 'other'
+  }
+}
+
+
+for (i in 1:length(blues$genotype)){
+  id <- blues$genotype[i]
+  if(id == 'B73'){
+    blues[blues$genotype == id, "het_grp"] <- 'B73'
+  }
+  else if (id %in% c('Mo17', 'MO17')){
+    blues[blues$genotype == id, "het_grp"] <- 'Mo17'
+  }
+  else{
+    print('empty')
+  }
+}
+
+
+res.pca <- prcomp(blues[ , 13:length(colnames(blues))], scale = FALSE)
+
+basic_plot <- fviz_pca_ind(res.pca, label= 'none')
+basic_plot
+ggplot(cbind(basic_plot$data, blues[, c('Trt', 'note', 'Group')]), aes(x=x, y=y, shape=Trt, col=note))+
+  geom_point(size=2)+
+  labs(title = 'PCA', x='Dim1 (82.7%)', y= 'Dim2 (12.4%)')+
+  #stat_ellipse()+
+  theme_bw(14)
+ 

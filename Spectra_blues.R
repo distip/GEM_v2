@@ -19,6 +19,12 @@ spectra$genotype <- factor(spectra$genotype)
 spectra$note <- factor(spectra$note)
 spectra$Trt <- factor(spectra$Trt)
 spectra$ASD <- factor(spectra$ASD)
+spectra$Group <- factor(spectra$Group)
+spectra$rows <- factor(spectra$rows)
+spectra$ranges <- factor(spectra$ranges)
+spectra$PLOT.ID <- factor(spectra$PLOT.ID)
+spectra$ASD  <- factor(spectra$ASD)
+spectra$Calibration <- factor(spectra$Calibration)
 
 spectra <- subset(spectra, select = -c(X, Unnamed..0))
 
@@ -43,7 +49,7 @@ for(i in 1:2) {
 }
 
 
-### Another list with a length of 2 can be created to store the BLUPs for the bands.
+### Another list with a length of 2 can be created to store the BLUEs for the bands.
 
 spectra.blues.list <- vector('list', 2)
 spectra.blues.list
@@ -57,7 +63,7 @@ for(i in 1:2){
   colnames(spectra.blues.list[[i]]) <- 'genotype'
   
 }
-View(spectra.blues.list)
+#View(spectra.blues.list)
 
 ### As before, names() can be used to track the appropriate Ns.
 
@@ -65,7 +71,7 @@ names(spectra.blues.list) <- c('HN', 'LN')
 ### The following nested loop will first go through the list of dataframes each containing
 ### hyperspectral data from a single N.
 
-for(i in 2:length(spectra.list)){
+for(i in 1:length(spectra.list)){
   for(j in 1:length(bands)){
     ### The hyperspectral data from just one N can be stored in a temporary variable.
     
@@ -79,14 +85,13 @@ for(i in 2:length(spectra.list)){
     
     ### The BLUE model is 
     
-  spectrum.blue.mod <- lmer(reflectance ~ genotype + (1|ASD) + (1|Rep) , REML = FALSE,  data = temp)
+  spectrum.blue.mod <- lmer(reflectance ~ genotype + (1|ASD) + (1|Rep) ,  data = temp)
     
   
      ### The BLUEs centered around the mean can also be calculated and stored in a dataframe. 
     spectra.int <- fixef(spectrum.blue.mod)[1]
-    spectra.blues <- fixef(spectrum.blue.mod)
-    #spectra.blues[-1] <- spectra.blues[-1] + spectra.int
-    spectra.blues.temp <- spectra.blues[-1] + spectra.int
+    spectra.blues.temp <- fixef(spectrum.blue.mod)
+    spectra.blues.temp[-1] <- spectra.blues.temp[-1] + spectra.int
     spectra.blues.temp <- data.frame (spectra.blues.temp)
     spectra.blues.temp<- cbind(genotype=rownames(spectra.blues.temp), spectra.blues.temp)
     rownames(spectra.blues.temp) <- NULL
@@ -122,9 +127,10 @@ bands.H2$bands<- as.numeric(substr(bands.H2$bands,2,5))
 ggplot(bands.H2, aes(bands, H2, color=Trt)) + geom_line()+
   labs(title = 'Broad Sense Heritabilities Under Different Nitrogen Applications')
 
-names(spectra.blups.list[['HN']]) <- sub('.x', '', names(spectra.blups.list[['HN']]))
+names(spectra.blues.list[['HN']]) <- sub('.x', '', names(spectra.blues.list[['HN']]))
 
-spectra_columns <- subset(spectra, select = c(1:11))
+spectra_one_rep <- spectra[spectra$Rep == 1,]
+spectra_columns <- subset(spectra_one_rep, select = c(1:12))
 merged_1 <- merge(spectra_columns[which(spectra_columns$Trt== 'HN'),], spectra.blues.list[['HN']], by = 'genotype')
 merged_2 <- merge(spectra_columns[which(spectra_columns$Trt== 'LN'),], spectra.blues.list[['LN']], by = 'genotype')
 
@@ -132,6 +138,50 @@ merged_2 <- merge(spectra_columns[which(spectra_columns$Trt== 'LN'),], spectra.b
 blues_merged <- merged_1 %>% full_join(merged_2)
 blues_merged$Block <- factor(blues_merged$Block, levels= c('2', '4', '1', '3'))
 write.csv(blues_merged, './spectra_blues.csv', row.names = FALSE)
+
+blues <- read_csv('spectra_blues.csv')
+blues <- as.data.frame(blues)
+blues <- blues %>% select(-contains(c('.x', '.y', '.z')))
+
+blues <- blues[ , colSums(is.na(blues))==0]
+
+
+str(blues)
+
+
+blues$genotype <- as.factor(blues$genotype)
+blues$PLOT.ID <- as.factor(blues$PLOT.ID)
+blues$rows <- as.factor(blues$rows)
+blues$ranges <- as.factor(blues$ranges)
+blues$Block <- as.factor(blues$Block)
+blues$Rep <- as.factor(blues$Rep)
+blues$Trt <- as.factor(blues$Trt)
+blues$year <- as.factor(blues$year)
+blues$note <-as.factor(blues$note)
+blues$Calibration <- as.factor(blues$Calibration)
+blues$ASD <- as.factor(blues$ASD)
+
+
+blues_plot <- melt(blues, id.vars = c('PLOT.ID', 'genotype','rows', 'ranges', 'Block' ,'Rep', 'Trt', 'year', 'note', 'Calibration', 'ASD', 'Group'))
+a <- sapply(strsplit(as.character(blues_plot$variable), '[.]'), '[[', 1)
+blues_plot$wavelength <- as.numeric(substr(a,2,5))
+blues_plot$wavelength <- as.numeric(blues_plot$wavelength)
+
+
+data <- blues_plot %>% group_by(wavelength,note) %>% 
+  summarise(mean.ref = mean(value, na.rm=TRUE), sd.ref = sd(value, na.rm = TRUE), se.ref= sd(value, na.rm=TRUE)/sqrt(length(value)), 
+            max = max(value, na.rm = TRUE), min = min(value, na.rm = TRUE))
+
+plt_blues <- ggplot(data=data, aes(x=wavelength, group= note)) +
+  geom_line(aes(y=mean.ref, color=note), size = 0.6)+
+  geom_ribbon(aes(ymin=mean.ref-se.ref , ymax=mean.ref+se.ref , fill=note),alpha=0.3)+
+  labs(title = 'Leaf Spectra inbred vs hybrids under HN', caption = '**Envelopes represent 1 sd from the mean')+
+  theme_bw()
+
+
+plt_blues
+
+
 
 ggplot(blues_merged, aes(rows, ranges, color=X730)) + 
   geom_point(size=1.3) +
@@ -157,25 +207,3 @@ spectra.blues.sub.melt$wavelength <- as.numeric(substr(a,2,5))
 
 
 
-View(spectra.blues.sub.melt)
-View(spectra.blues.list)
-colnames(spectra.blues.sub.melt)[4] <- 'Trt'
-
-
-write.csv(spectra.blues.sub.melt, './fullspectra_plots_blues.csv', row.names = FALSE )
-spectra.blues.sub.melt <- read.csv('fullspectra_plots_blues.csv')
-
-ggplot(spectra.blues.sub.melt[which(spectra.blues.sub.melt$Trt == 'HN'),], aes(wavelength, value, color=genotype)) +
-  geom_line(size=0.3)+
-  theme(legend.position = 'none')
-
-
-ggplot() +
-  geom_line(data=spectra.blues.sub.melt[which(spectra.blues.sub.melt$Trt == 'LN'),],aes(wavelength, value, group= genotype, color='LN'), size=0.1)+
-  geom_line(data=spectra.blues.sub.melt[which(spectra.blues.sub.melt$Trt == 'HN'),], aes(wavelength, value, group= genotype, color='HN'), size=0.1)+
-  scale_color_manual(name='Treatment',  values = c('HN'= 'green', 'LN' = 'yellow'))
-
-
-ggplot(data = spectra.blues.sub.melt)+
-  geom_line(aes(wavelength, value, group=genotype, color=Trt), size=0.1)+
-  labs(title = 'Leaf spectra (BLUPS)', x='bands', y='reflectance')

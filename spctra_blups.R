@@ -22,6 +22,12 @@ spectra$genotype <- factor(spectra$genotype)
 spectra$note <- factor(spectra$note)
 spectra$Trt <- factor(spectra$Trt)
 spectra$ASD <- factor(spectra$ASD)
+spectra$Group <- factor(spectra$Group)
+spectra$rows <- factor(spectra$rows)
+spectra$ranges <- factor(spectra$ranges)
+spectra$PLOT.ID <- factor(spectra$PLOT.ID)
+spectra$ASD  <- factor(spectra$ASD)
+spectra$Calibration <- factor(spectra$Calibration)
 
 spectra <- subset(spectra, select = -c(X))
 
@@ -312,7 +318,7 @@ data$wavelength <- as.numeric(data$wavelength)
 
 plt_blups <- ggplot(data=data, aes(x=wavelength, group= note)) +
   geom_line(aes(y=mean.ref, color=note), size = 0.6)+
-  geom_ribbon(aes(ymin=mean.ref-sd.ref , ymax=mean.ref+sd.ref , fill=note),alpha=0.3)+
+  geom_ribbon(aes(ymin=mean.ref-se.ref , ymax=mean.ref+se.ref , fill=note),alpha=0.3)+
   labs(title = 'Leaf Spectra inbred vs hybrids under HN', caption = '**Envelopes represent 1 sd from the mean')+
   theme_bw()
 

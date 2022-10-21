@@ -17,21 +17,28 @@ spectra$genotype <- factor(spectra$genotype)
 spectra$note <- factor(spectra$note)
 spectra$Trt <- factor(spectra$Trt)
 spectra$ASD <- factor(spectra$ASD)
+spectra$Group <- factor(spectra$Group)
+spectra$rows <- factor(spectra$rows)
+spectra$ranges <- factor(spectra$ranges)
+spectra$PLOT.ID <- factor(spectra$PLOT.ID)
+spectra$ASD  <- factor(spectra$ASD)
+spectra$Calibration <- factor(spectra$Calibration)
 
 spectra <- subset(spectra, select = -c(X, Unnamed..0))
 
+spectra.hybrids <- spectra[spectra$Group == 'Inbred',]
 
 
-bands <- (colnames(spectra)[-c(1:11)])
-bands_df <-as.data.frame(colnames(spectra)[-c(1:11)])
+bands <- (colnames(spectra.hybrids)[-c(1:13)])
+bands_df <-as.data.frame(colnames(spectra.hybrids)[-c(1:13)])
 bands 
 bands_df$H2 <- NA
 colnames(bands_df) <- c('band', 'H2')
 bands.H2 <- bands_df
 
-spectral.blups.list <- data.frame(levels(spectra$genotype))
+spectra.hybridsl.blups.list <- data.frame(levels(spectra.hybrids$genotype))
 
-colnames(spectral.blups.list) <- 'genotype'
+colnames(spectra.hybridsl.blups.list) <- 'genotype'
 
 
 
@@ -116,8 +123,8 @@ names(var.part.list) <- as.numeric(substr(as.character(bands), 2,5))
 
 values <- c()
 for(i in 1:length(bands)){
-  temp <- spectra
-  temp<-temp[, which(colnames(spectra) %in% c('PLOT.ID','genotype', 'Block', 'Trt', 'Rep', 'ASD', bands[i]))]
+  temp <- spectra.hybrids
+  temp<-temp[, which(colnames(spectra.hybrids) %in% c('PLOT.ID','genotype', 'Block', 'Trt', 'Rep', 'ASD', bands[i]))]
   colnames(temp)[7] <- 'reflectance'
   m <- lmer(reflectance ~Trt + (Trt|genotype), data=temp)
   extractVarsLmm(m)
@@ -132,7 +139,7 @@ for(i in 1:length(bands)){
 }
 
 var.part.list.melt <- melt(var.part.list)
-var.part.list.melt$source <- rep(c('LN', 'HN', 'Nitrate', 'Plasticity', 'Residual'), 10755/5)
+var.part.list.melt$source <- rep(c('LN', 'HN', 'Nitrate', 'Plasticity', 'Residual'), 10750/5)
 var.part.list.melt$source <- factor(var.part.list.melt$source)
 colnames(var.part.list.melt) <- c('values', 'band', 'source')
 var.part.list.melt$band <- as.numeric(var.part.list.melt$band)
