@@ -13,6 +13,22 @@ theme_set(theme_bw(10))
 blups <- read.csv('spectra_blups.csv')
 View(blups)
 
+str(blups)
+
+blups$Rep <- factor(blups$Rep)
+blups$Block <- factor(blups$Block)
+blups$year <- factor(blups$year)
+blups$genotype <- factor(blups$genotype)
+blups$note <- factor(blups$note)
+blups$Trt <- factor(blups$Trt)
+blups$ASD <- factor(blups$ASD)
+blups$Group <- factor(blups$Group)
+blups$rows <- factor(blups$rows)
+blups$ranges <- factor(blups$ranges)
+blups$PLOT.ID <- factor(blups$PLOT.ID)
+blups$ASD  <- factor(blups$ASD)
+blups$Calibration <- factor(blups$Calibration)
+
 blups.melt <- melt(blups, id.vars = c('genotype', 'PLOT.ID', 'rows', 'ranges', 'Block', 'Rep', 'Trt', 'year', 'note', 'Calibration', 'ASD'))
 
 View(blups.melt)
@@ -112,8 +128,8 @@ blups_LN <- blups[blups$Trt == 'LN' & blups$Rep == 1 ,]
 
 het <- blups_LN %>% filter(grepl(' X ', genotype))
 
-mid.heterosis.val_LN <- expand.grid(bands= 350:2500, genotype = het$genotype)
-mid.heterosis.val_LN$heterosis <- NA
+mid_LN <- expand.grid(bands= 350:2500, genotype = het$genotype)
+mid_LN$heterosis <- NA
 
 for(i in 1:length(het$genotype)){
   for(j in 13:length(colnames(het))){
@@ -125,7 +141,7 @@ for(i in 1:length(het$genotype)){
       male2 <- mean(blups_LN[which(blups_LN$genotype == male ), j])
       hybrid2 <- mean(blups_LN[which(blups_LN$genotype == hybrid ), j])
       heterosis <- (hybrid2-mean(c(male2,female2)))/mean(c(male2,female2))*100
-      mid.heterosis.val_LN[mid.heterosis.val_LN$bands == j+337 & mid.heterosis.val_LN$genotype == hybrid , 'heterosis'] <- heterosis
+      mid_LN[mid_LN$bands == j+337 & mid_LN$genotype == hybrid , 'heterosis'] <- heterosis
       print(i)
       print(j)
     }
@@ -136,31 +152,31 @@ for(i in 1:length(het$genotype)){
  }
 
 males <- c()
-for(i in 1:length(mid.heterosis.val_LN$genotype)){
-  male <- strsplit(as.character(mid.heterosis.val_LN$genotype[i]), ' X ')[[1]][2]
+for(i in 1:length(mid_LN$genotype)){
+  male <- strsplit(as.character(mid_LN$genotype[i]), ' X ')[[1]][2]
   males<- c(males,  male)
   print(i)
  }
-mid.heterosis.val_LN$male <- males
-mid.heterosis.val_LN <- na.omit(mid.heterosis.val_LN)
+mid_LN$male <- males
+mid_LN <- na.omit(mid_LN)
 
-p1 <-ggplot(data=mid.heterosis.val_LN , aes(x=bands, y=heterosis, group=genotype, colour=male)) + 
+p1 <-ggplot(data=mid_LN , aes(x=bands, y=heterosis, group=genotype, colour=male)) + 
   geom_line(size=0.4, alpha=0.6)+
   labs(title='Mid-Parent Heterosis in Low-Nitrogen', x='bands', y='heterosis %')
 p1
 
 
-p2 <- ggplot(data=mid.heterosis.val_LN[mid.heterosis.val_LN$male %in% c('B73', 'Mo17'),], aes(x=bands, y=heterosis, group=genotype, colour=male)) + 
+p2 <- ggplot(data=mid_LN[mid_LN$male %in% c('B73', 'Mo17'),], aes(x=bands, y=heterosis, group=genotype, colour=male)) + 
   geom_line(size=0.4, alpha=0.6)+
   labs(title='Mid-Parent Heterosis in High-Nitrogen', x='bands', y='heterosis %')
 
 
-data <- mid.heterosis.val_LN[mid.heterosis.val_LN$male %in% c('B73', 'Mo17'),] %>% group_by(male,bands) %>% 
+data_mid_LN <- mid_LN[mid_LN$male %in% c('B73', 'Mo17'),] %>% group_by(male,bands) %>% 
   summarise(mean.heterosis = mean(heterosis, na.rm=TRUE), sd.heterosis = sd(heterosis, na.rm = TRUE), se.heterosis= sd(heterosis, na.rm=TRUE)/sqrt(length(heterosis)), 
             max = max(heterosis, na.rm = TRUE), min = min(heterosis, na.rm = TRUE))
-View(data) 
+View(data_mid_LN) 
 
-p4 <- ggplot(data=data, aes(x=bands, group= male)) +
+p4 <- ggplot(data_mid_LN=data_mid_LN, aes(x=bands, group= male)) +
   geom_line(aes(y=mean.heterosis, color=male), size = 0.7)+
   geom_ribbon(aes(ymin=mean.heterosis-se.heterosis , ymax=mean.heterosis+se.heterosis , fill=male),alpha=0.4)+
   labs(title = 'Mid-parent Heterosis in LN', caption = '**Envelopes represent 1 se from the mean')
@@ -227,7 +243,7 @@ p4
 ### merging 2 datafrmae to make a common plot
 
 data$Trt <- c(rep('LN', length(data$bands)))
-data2$Trt <- c(rep('HN', length(data2$bands)))
+data_lower_HN$Trt <- c(rep('HN', length(data_lower_HN$bands)))
 
 plot_data <- data %>% full_join(data2)
 
@@ -305,15 +321,15 @@ p4 <- ggplot(data=data, aes(x=bands, group= male)) +
   geom_ribbon(aes(ymin=mean.heterosis-se.heterosis , ymax=mean.heterosis+se.heterosis , fill=male),alpha=0.4)+
   labs(title = 'Lower-parent Heterosis in LN', caption = '**Envelopes represent 1 sd from the mean')
 p4
-######## heterosis calculation for high nitrogen condition ###########
+######## lower parent heterosis calculation for high nitrogen condition ###########
 
 ## heterosis calculation for high nitrogen condition
 blups_HN <- blups[blups$Trt == 'HN' & blups$Rep == 1 ,]
 
 het <- blups_HN %>% filter(grepl(' X ', genotype))
 
-mid.heterosis.val_HN <- expand.grid(bands= 350:2500, genotype = het$genotype)
-mid.heterosis.val_HN$heterosis <- NA
+lower_HN <- expand.grid(bands= 350:2500, genotype = het$genotype)
+lower_HN$heterosis <- NA
 
 for(i in 1:length(het$genotype)){
   for(j in 13:length(colnames(het))){
@@ -326,7 +342,7 @@ for(i in 1:length(het$genotype)){
       lower <- min(c(female2, male2))
       hybrid2 <- mean(blups_HN[which(blups_HN$genotype == hybrid ), j])
       heterosis <- (lower-hybrid2)/lower*100
-      mid.heterosis.val_HN[mid.heterosis.val_HN$bands == j+337 & mid.heterosis.val_HN$genotype == hybrid , 'heterosis'] <- heterosis
+      lower_HN[lower_HN$bands == j+337 & lower_HN$genotype == hybrid , 'heterosis'] <- heterosis
       print(i)
       print(j)
     }
@@ -336,31 +352,31 @@ for(i in 1:length(het$genotype)){
 }
 
 males <- c()
-for(i in 1:length(mid.heterosis.val_HN$genotype)){
-  male <- strsplit(as.character(mid.heterosis.val_HN$genotype[i]), ' X ')[[1]][2]
+for(i in 1:length(lower_HN$genotype)){
+  male <- strsplit(as.character(lower_HN$genotype[i]), ' X ')[[1]][2]
   males<- c(males,  male)
   print(i)
 }
-mid.heterosis.val_HN$male <- males
-mid.heterosis.val_HN <- na.omit(mid.heterosis.val_HN)
-mid.heterosis.val_HN$male <- factor(mid.heterosis.val_HN$male)
-copy <- mid.heterosis.val_HN
+lower_HN$male <- males
+lower_HN <- na.omit(lower_HN)
+lower_HN$male <- factor(lower_HN$male)
+copy <- lower_HN
 
 
-p2 <- ggplot(data=mid.heterosis.val_HN[mid.heterosis.val_HN$male %in% c('B73', 'Mo17'),], aes(x=bands, y=heterosis, group=genotype, colour=male)) + 
+p2 <- ggplot(data=lower_HN[lower_HN$male %in% c('B73', 'Mo17'),], aes(x=bands, y=heterosis, group=genotype, colour=male)) + 
   geom_line(size=0.4, alpha=0.6)+
   labs(title='Lower-Parent Heterosis in High-Nitrogen', x='bands', y='heterosis %')
 p2
 
-p3 <- ggplot(data=mid.heterosis.val_HN[mid.heterosis.val_HN$male %in% c('B73', 'Mo17'),], aes(x=bands, y=heterosis, colour=male)) +
+p3 <- ggplot(data=lower_HN[lower_HN$male %in% c('B73', 'Mo17'),], aes(x=bands, y=heterosis, colour=male)) +
   stat_smooth(method='loess', span = 0.1, se=FALSE, aes(fill=male), alpha=0.5)
 
-data2 <- mid.heterosis.val_HN[mid.heterosis.val_HN$male %in% c('B73', 'Mo17'),] %>% group_by(male,bands) %>% 
+data_lower_HN <- lower_HN[lower_HN$male %in% c('B73', 'Mo17'),] %>% group_by(male,bands) %>% 
   summarise(mean.heterosis = mean(heterosis, na.rm=TRUE), sd.heterosis = sd(heterosis, na.rm = TRUE), se.heterosis= sd(heterosis, na.rm=TRUE)/sqrt(length(heterosis)), 
             max = max(heterosis, na.rm = TRUE), min = min(heterosis, na.rm = TRUE))
 
 
-p5 <- ggplot(data=data2, aes(x=bands, group= male)) +
+p5 <- ggplot(data=data_lower_HN, aes(x=bands, group= male)) +
   geom_line(aes(y=mean.heterosis, color=male), size = 0.7)+
   geom_ribbon(aes(ymin=mean.heterosis-se.heterosis , ymax=mean.heterosis+se.heterosis , fill=male),alpha=0.4)+
   labs(title = 'Lower-parent Heterosis in HN', caption = '**Envelopes represent 1 se from the mean')

@@ -175,16 +175,36 @@ fviz_pca_var(res.pca, select.var = list(contrib =1000), pointsize= 0.1)
 fviz_pca_var(res.pca, select.var = list(cos2 = 0.00006))
 
               #### PCA of Raw Spectra #####
+spectra <- read.csv("Raw_spectrum_merged")
+
+str(spectra)
+
+spectra$Rep <- factor(spectra$Rep)
+spectra$Block <- factor(spectra$Block)
+spectra$year <- factor(spectra$year)
+spectra$genotype <- factor(spectra$genotype)
+spectra$note <- factor(spectra$note)
+spectra$Trt <- factor(spectra$Trt)
+spectra$ASD <- factor(spectra$ASD)
 
 spectra2  <-  spectra %>% drop_na()
 spectra <- subset(spectra, select = -c(X, Unnamed..0))
 
-res.pca <- prcomp(spectra2[, 12:length(colnames(spectra2))], scale = FALSE)
+res.pca <- prcomp(spectra2[spectra2$ASD %in% c('1','2'), 13:length(colnames(spectra2))], scale = FALSE)
 
 fviz_pca_ind(res.pca, geom="point")
 
 
 fviz_pca_ind(res.pca, label="none", habillage=spectra2$ASD)
+
+
+basic_plot <- fviz_pca_ind(res.pca, label= 'none')
+basic_plot
+ggplot(cbind(basic_plot$data, spectra2[spectra2$ASD %in% c('1','2'), c('Trt', 'ASD', 'Group')]), aes(x=x, y=y, col=ASD))+
+  geom_point(size=1.4, alpha=0.7)+
+  labs(title = 'PCA of raw spectrum', x='Dim1 (77.2%)', y= 'Dim2 (10.9%)')+
+  #stat_ellipse()+
+  theme_bw(14)
 
 
 

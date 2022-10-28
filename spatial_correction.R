@@ -46,7 +46,7 @@ ggplot(spectra.new, aes(rows, ranges, color=X730)) +
   #annotate('rect', xmin=0, xmax = 50, ymin = 7.5, ymax = 12.5, alpha= .1)+
   facet_wrap(Block~Trt)+
   scale_colour_viridis() +
-  labs(title = 'Range and Row effects on leaf spectrum', caption = ' Blocks 1 and 4 = + N , 2 and 3 = -N\nred rectangles are the hybrids ')+
+  labs(title = 'Range and Row effects on raw leaf spectrum (for only one band)', caption = ' Blocks 1 and 4 = + N , 2 and 3 = -N\nred rectangles are the hybrids ')+
   theme_classic()
   #theme(strip.background = element_rect(color = 'black', fill = Trt))
 
@@ -226,10 +226,11 @@ spectra_columns <- subset(spectra, select = c(1:13))
 merged_1 <- merge(spectra_columns[which(spectra_columns$Trt== 'HN'),], spectra.blups.list[['HN']], by = 'genotype')
 merged_2 <- merge(spectra_columns[which(spectra_columns$Trt== 'LN'),], spectra.blups.list[['LN']], by = 'genotype')
 
+blups_merged <- read_csv('spectra_blups.csv')
 blups_merged <- merged_1 %>% full_join(merged_2)
 blups_merged$Block <- factor(blups_merged$Block, levels= c('2', '4', '1', '3'))
 
-
+blups_merged <- read_csv('spectra_blups.csv')
 
 ggplot(blups_merged, aes(rows, ranges, color=X730)) + 
   geom_point(size=1.3) +
@@ -238,7 +239,7 @@ ggplot(blups_merged, aes(rows, ranges, color=X730)) +
   #annotate('rect', xmin=0, xmax = 50, ymin = 7.5, ymax = 12.5, alpha= .1)+
   facet_wrap(~Trt)+
   scale_colour_viridis() +
-  labs(title = 'Range and Row effects on leaf spectrum after spatial correction', caption = ' Blocks 1 and 4 = + N , 2 and 3 = -N\nred rectangles are the hybrids ')+
+  labs(title = 'Range and Row effects on leaf spectrum after blups', caption = ' Blocks 1 and 4 = + N , 2 and 3 = -N\nred rectangles are the hybrids ')+
   theme_classic()
 #theme(strip.background = element_rect(color = 'black', fill = Trt))
 
