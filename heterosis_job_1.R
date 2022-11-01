@@ -28,7 +28,7 @@ blups$ASD  <- factor(blups$ASD)
 
 ########################   CALCULATION OF MID-PARENT HETEROSIS   #####################################
 ## heterosis calculation for low nitrogen condition
-blups_LN <- blups[blups$Trt == "LN" & blups$Rep == 1 ,]
+blups_LN <- blups[blups$Trt == "LN" & blups$Rep == 2 ,]
 
 het <- blups_LN %>% filter(grepl(" X ", genotype))
 
@@ -64,6 +64,7 @@ for(i in 1:length(mid_LN$genotype)){
 mid_LN$male <- males
 mid_LN <- na.omit(mid_LN)
 
+write_csv(mid_LN, 'mid_LN.csv')
 
 data_mid_LN <- mid_LN[mid_LN$male %in% c("B73", "Mo17"),] %>% group_by(male,bands) %>% 
   summarise(mean.heterosis = mean(heterosis, na.rm=TRUE), sd.heterosis = sd(heterosis, na.rm = TRUE), se.heterosis= sd(heterosis, na.rm=TRUE)/sqrt(length(heterosis)), 
@@ -107,7 +108,7 @@ for(i in 1:length(mid_HN$genotype)){
 mid_HN$male <- males
 mid_HN <- na.omit(mid_HN)
 
-
+write_csv(mid_HN, 'mid_HN.csv')
 data_mid_HN <- mid_HN[mid_HN$male %in% c("B73", "Mo17"),] %>% group_by(male,bands) %>% 
   summarise(mean.heterosis = mean(heterosis, na.rm=TRUE), sd.heterosis = sd(heterosis, na.rm = TRUE), se.heterosis= sd(heterosis, na.rm=TRUE)/sqrt(length(heterosis)), 
             max = max(heterosis, na.rm = TRUE), min = min(heterosis, na.rm = TRUE))
@@ -150,6 +151,7 @@ for(i in 1:length(low_LN$genotype)){
 low_LN$male <- males
 low_LN <- na.omit(low_LN)
 
+write_csv(low_LN, 'low_LN.csv')
 
 data_low_LN <- low_LN[low_LN$male %in% c("B73", "Mo17"),] %>% group_by(male,bands) %>% 
   summarise(mean.heterosis = mean(heterosis, na.rm=TRUE), sd.heterosis = sd(heterosis, na.rm = TRUE), se.heterosis= sd(heterosis, na.rm=TRUE)/sqrt(length(heterosis)), 
@@ -194,6 +196,7 @@ for(i in 1:length(low_HN$genotype)){
 low_HN$male <- males
 low_HN <- na.omit(low_HN)
 
+write_csv(low_HN, 'low_HN.csv')
 
 data_low_HN <- low_HN[low_HN$male %in% c("B73", "Mo17"),] %>% group_by(male,bands) %>% 
   summarise(mean.heterosis = mean(heterosis, na.rm=TRUE), sd.heterosis = sd(heterosis, na.rm = TRUE), se.heterosis= sd(heterosis, na.rm=TRUE)/sqrt(length(heterosis)), 
@@ -239,6 +242,7 @@ for(i in 1:length(better_LN$genotype)){
 better_LN$male <- males
 better_LN <- na.omit(better_LN)
 
+write_csv(better_LN, 'better_LN.csv')
 
 data_better_LN <- better_LN[better_LN$male %in% c("B73", "Mo17"),] %>% group_by(male,bands) %>% 
   summarise(mean.heterosis = mean(heterosis, na.rm=TRUE), sd.heterosis = sd(heterosis, na.rm = TRUE), se.heterosis= sd(heterosis, na.rm=TRUE)/sqrt(length(heterosis)), 
@@ -283,7 +287,86 @@ for(i in 1:length(better_HN$genotype)){
 better_HN$male <- males
 better_HN <- na.omit(better_HN)
 
+write_csv(better_HN, 'better_HN.csv')
 
 data_better_HN <- better_HN[better_HN$male %in% c("B73", "Mo17"),] %>% group_by(male,bands) %>% 
   summarise(mean.heterosis = mean(heterosis, na.rm=TRUE), sd.heterosis = sd(heterosis, na.rm = TRUE), se.heterosis= sd(heterosis, na.rm=TRUE)/sqrt(length(heterosis)), 
             max = max(heterosis, na.rm = TRUE), min = min(heterosis, na.rm = TRUE))
+
+
+                                    ############################### MERGING ALL DATAFRAMES ###########################
+
+
+data_mid_HN$Trt <- c(rep('HN', length(data_mid_HN$bands)))
+data_mid_HN$Htype <- c(rep('mid', length(data_mid_HN$bands)))
+
+data_mid_LN$Trt <- c(rep('LN', length(data_mid_LN$bands)))
+data_mid_LN$Htype <- c(rep('mid', length(data_mid_LN$bands)))
+
+data_better_HN$Trt <- c(rep('HN', length(data_better_HN$bands)))
+data_better_HN$Htype <- c(rep('better', length(data_better_HN$bands)))
+
+data_better_LN$Trt <- c(rep('LN', length(data_better_LN$bands)))
+data_better_LN$Htype <- c(rep('better', length(data_better_LN$bands)))
+
+data_low_HN$Trt <- c(rep('HN', length(data_low_HN$bands)))
+data_low_HN$Htype <- c(rep('low', length(data_low_HN$bands)))
+
+data_low_LN$Trt <- c(rep('LN', length(data_low_LN$bands)))
+data_low_LN$Htype <- c(rep('low', length(data_low_LN$bands)))
+
+
+
+plot_data <- data_mid_HN %>% full_join(data_mid_LN) %>% full_join(data_better_HN) %>% full_join(data_better_LN) %>% full_join(data_low_HN) %>%
+  full_join(data_low_LN)
+
+write.csv(plot_data, 'heterosis_data.csv')
+
+sub_plot_data = plot_data[plot_data$Htype == 'mid',]
+
+theme_set(theme_bw(10))
+p6 <- ggplot(data=sub_plot_data, aes(x=bands, group= male)) +
+  geom_line(data= sub_plot_data[sub_plot_data$Trt == 'HN',], aes( x= bands,y=mean.heterosis, linetype=male, color= Trt),size = 0.7)+
+  geom_ribbon(data= sub_plot_data[sub_plot_data$Trt == 'HN',], aes(ymin=mean.heterosis-se.heterosis , ymax=mean.heterosis+se.heterosis),alpha=0.2)+
+  geom_line(data= sub_plot_data[sub_plot_data$Trt == 'LN',], aes( x= bands,y=mean.heterosis,linetype=male, color = Trt), size = 0.7)+
+  geom_ribbon(data= sub_plot_data[sub_plot_data$Trt == 'LN',], aes(ymin=mean.heterosis-se.heterosis , ymax=mean.heterosis+se.heterosis),alpha=0.2)+
+  scale_x_continuous(breaks =c(350, 550, 710, 1445,1890, 2020, 2410, 2500))+
+  theme(axis.text.x = element_text(angle=45))+
+  labs(title = 'Mid-parent Heterosis under HN and LN conditions', caption = '**Envelopes represent 1 se from the mean')
+
+p6 +
+  annotate('rect', xmin=350, xmax=750, ymin=-10, ymax=10, alpha= 0.1, fill='blue')+
+  annotate('rect', xmin=750, xmax=2500, ymin=-10, ymax=10, alpha= 0.1, fill='yellow')+
+  annotate('text', x=550, y=9, label= 'Environmentally \n Driven')+
+  annotate('text', x=1500, y=9, label = 'Genetically Driven')+
+  geom_vline(xintercept = 550, size=0.2)+
+  geom_vline(xintercept = 710, size=0.2)+
+  geom_vline(xintercept = 1445, size=0.2)+
+  geom_vline(xintercept = 1890, size=0.2)+
+  geom_vline(xintercept = 2020, size=0.2)+
+  geom_vline(xintercept = 2410, size=0.2)
+
+
+analysis_mid_LN <- mid_LN[mid_LN$bands %in%  c('550', '710', '1445', '1890', '2020', '2410'),] # %>% distinct(genotype, .keep_all = TRUE)
+analysis_mid_HN <- mid_HN[mid_HN$bands %in% c('550', '710', '1445', '1890', '2020', '2410') ,] # %>% distinct(genotype, .keep_all = TRUE)
+analysis_mid_HN$Trt <- c(rep('HN', length(analysis_mid_HN$bands)))
+analysis_mid_LN$Trt <- c(rep('LN', length(analysis_mid_LN$bands)))
+
+analysis_mid_merge <- analysis_mid_HN %>% full_join(analysis_mid_LN)
+analysis_mid_merge$bands <- factor(analysis_mid_merge$bands)
+
+box_mid <- ggplot(data = analysis_mid_merge, aes(x = bands, y = heterosis, fill= male)) + 
+  geom_boxplot(width=0.1, position = position_dodgenudge(width=1))+
+  geom_boxplot(width=0.1, position= position_nudge(x = -0.2),  aes(fill= Trt))+
+  #annotate('text' , x=0.8 , y= 22, label='p-value < 2.2e-16')+
+  labs(title = 'MPH values of Spectra in 6 hotspots')
+  
+
+box_mid
+
+t.test(analysis_mid_HN[analysis_mid_HN$bands == '1890', 'heterosis'], analysis_mid_LN[analysis_mid_LN$bands == '1890', 'heterosis'], var.equal = TRUE)
+
+
+
+
+
