@@ -319,3 +319,37 @@ ggplot(cbind(basic_plot$data, blues[blues$Trt == 'LN', c('Trt', 'note', 'Group')
   #stat_ellipse()+
   theme_bw(14)
  
+
+                                           ##################### PCA of blupsv2  ###########################
+
+blups_merged_v2 <- read.csv('spectra_comb_blups_v2.csv')
+
+str(blups_merged_v2)
+
+blups_merged_v2$genotype <- factor(blups_merged_v2$genotype)
+blups_merged_v2$PLOT.ID <- factor(blups_merged_v2$PLOT.ID)
+blups_merged_v2$rows <- factor(blups_merged_v2$rows)
+blups_merged_v2$ranges <- factor(blups_merged_v2$ranges)
+blups_merged_v2$Block <- factor(blups_merged_v2$Block)
+blups_merged_v2$Rep <- factor(blups_merged_v2$Rep)
+blups_merged_v2$Trt  <- factor(blups_merged_v2$Trt)
+blups_merged_v2$year <- factor(blups_merged_v2$year)
+blups_merged_v2$note <- factor(blups_merged_v2$note)
+blups_merged_v2$Calibration <- factor(blups_merged_v2$Calibration)
+blups_merged_v2$ASD <- factor(blups_merged_v2$ASD)
+blups_merged_v2$new_GID <- factor(blups_merged_v2$new_GID)
+
+blups_merged_v2 <- blups_merged_v2[blups_merged_v2$Rep == 2 , ]
+
+
+res.pca <- prcomp(blups_merged_v2[ , 14:length(colnames(blups_merged_v2))], scale = FALSE)
+
+basic_plot <- fviz_pca_ind(res.pca, label= 'none')
+basic_plot
+ggplot(cbind(basic_plot$data, blups_merged_v2[, c('Trt', 'note', 'Group')]), aes(x=x, y=y, shape=Group))+
+  geom_point(aes(col=Trt), size=2)+
+  scale_shape_manual(values = c(1,16))+
+  labs(title = 'PCA', x='Dim1 (73.8%)', y= 'Dim2 (19.8%)')+
+  #stat_ellipse()+
+  theme_bw(14)
+
