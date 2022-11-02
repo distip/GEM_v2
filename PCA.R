@@ -212,7 +212,7 @@ ggplot(cbind(basic_plot$data, spectra2[spectra2$ASD %in% c('1','2'), c('Trt', 'A
 
                             ###### PCA of blues ######
 
-blues <- read_csv('spectra_blues.csv')
+blues <- read.csv('spectra_blues.csv')
 blues <- as.data.frame(blues)
 blues <- blues %>% select(-contains(c('.x', '.y', '.z')))
                           
@@ -309,11 +309,11 @@ for (i in 1:length(blues$genotype)){
 }
 
 
-res.pca <- prcomp(blues[ , 13:length(colnames(blues))], scale = FALSE)
+res.pca <- prcomp(blues[blues$Trt == 'LN' , 11:length(colnames(blues))], scale = FALSE)
 
 basic_plot <- fviz_pca_ind(res.pca, label= 'none')
 basic_plot
-ggplot(cbind(basic_plot$data, blues[, c('Trt', 'note', 'Group')]), aes(x=x, y=y, shape=Trt, col=note))+
+ggplot(cbind(basic_plot$data, blues[blues$Trt == 'LN', c('Trt', 'note', 'Group')]), aes(x=x, y=y, col=Group))+
   geom_point(size=2)+
   labs(title = 'PCA', x='Dim1 (82.7%)', y= 'Dim2 (12.4%)')+
   #stat_ellipse()+

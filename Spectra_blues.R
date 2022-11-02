@@ -162,26 +162,35 @@ blues$Calibration <- as.factor(blues$Calibration)
 blues$ASD <- as.factor(blues$ASD)
 
 
-blues_plot <- melt(blues, id.vars = c('PLOT.ID', 'genotype','rows', 'ranges', 'Block' ,'Rep', 'Trt', 'year', 'note', 'Calibration', 'ASD', 'Group'))
+blues_plot <- melt(blues, id.vars = c('PLOT.ID', 'genotype','rows', 'ranges', 'Block' ,'Rep', 'Trt', 'year', 'note', 'Group'))
 a <- sapply(strsplit(as.character(blues_plot$variable), '[.]'), '[[', 1)
 blues_plot$wavelength <- as.numeric(substr(a,2,5))
 blues_plot$wavelength <- as.numeric(blues_plot$wavelength)
 
 
-data <- blues_plot %>% group_by(wavelength,note) %>% 
+data <- blues_plot %>% group_by(wavelength,Group) %>% 
   summarise(mean.ref = mean(value, na.rm=TRUE), sd.ref = sd(value, na.rm = TRUE), se.ref= sd(value, na.rm=TRUE)/sqrt(length(value)), 
             max = max(value, na.rm = TRUE), min = min(value, na.rm = TRUE))
 
-plt_blues <- ggplot(data=data, aes(x=wavelength, group= note)) +
-  geom_line(aes(y=mean.ref, color=note), size = 0.6)+
-  geom_ribbon(aes(ymin=mean.ref-se.ref , ymax=mean.ref+se.ref , fill=note),alpha=0.3)+
+plt_blues <- ggplot(data=data, aes(x=wavelength, group= genotype)) +
+  geom_line(aes(y=mean.ref, color=Group), size = 0.6)+
+  geom_ribbon(aes(ymin=mean.ref-se.ref , ymax=mean.ref+se.ref , fill=Group),alpha=0.3)+
   labs(title = 'Leaf Spectra inbred vs hybrids under HN', caption = '**Envelopes represent 1 sd from the mean')+
   theme_bw()
 
 
 plt_blues
 
+blues_plot_2 <- ggplot() +
+  geom_line(data=blues_plot[which(blues_plot$Trt == 'HN'),],aes(wavelength, value, group= genotype, color='HN'), size=0.05)+
+  geom_line(data=blues_plot[which(blues_plot$Trt == 'LN'),], aes(wavelength, value, group= genotype, color='LN'), size=0.05)+
+  scale_color_manual(name='Treatment',  values = c('HN'= 'green', 'LN' = 'yellow'))
 
+blues_plot_2
+
+blues_plot <- ggplot(data = blues_plot)+
+  geom_line(aes(wavelength, value, group=genotype, color=Trt), size=0.1)+
+  labs(title = 'Leaf spectra (BLUES)', x='bands', y='reflectance')
 
 ggplot(blues_merged, aes(rows, ranges, color=X730)) + 
   geom_point(size=1.3) +
@@ -193,6 +202,8 @@ ggplot(blues_merged, aes(rows, ranges, color=X730)) +
   labs(title = 'BLUEs Corrected \n genotype+(1|ASD)+(1|Block:Rep)', caption = ' Blocks 1 and 4 = + N , 2 and 3 = -N\nred rectangles are the hybrids ')+
   theme_classic()
 #theme(strip.background = element_rect(color = 'black', fill = Trt))
+
+
 
 
 ### To look at the hyperspectral data from multiple genotypes on a single data, the first 
