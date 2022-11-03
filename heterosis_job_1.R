@@ -8,7 +8,7 @@ library(ggforce)
 library(cowplot)
 
 
-blups <- read.csv("spectra_blups.csv")
+blups <- read.csv("spectra_comb_blups_v2.csv")
 
 blups$Rep <- factor(blups$Rep)
 blups$Block <- factor(blups$Block)
@@ -36,7 +36,7 @@ mid_LN <- expand.grid(bands= 350:2500, genotype = het$genotype)
 mid_LN$heterosis <- NA
 
 for(i in 1:length(het$genotype)){
-  for(j in 13:length(colnames(het))){
+  for(j in 14:length(colnames(het))){
     hybrid <- as.character(het$genotype[i])
     female <- strsplit(as.character(het$genotype[i]), " X ")[[1]][1]
     male <- strsplit(as.character(het$genotype[i]), " X ")[[1]][2]
@@ -45,7 +45,7 @@ for(i in 1:length(het$genotype)){
       male2 <- mean(blups_LN[which(blups_LN$genotype == male ), j])
       hybrid2 <- mean(blups_LN[which(blups_LN$genotype == hybrid ), j])
       heterosis <- (hybrid2-mean(c(male2,female2)))/mean(c(male2,female2))*100
-      mid_LN[mid_LN$bands == j+337 & mid_LN$genotype == hybrid , "heterosis"] <- heterosis
+      mid_LN[mid_LN$bands == j+336 & mid_LN$genotype == hybrid , "heterosis"] <- heterosis
       print(i)
       print(j)
     }
@@ -64,16 +64,17 @@ for(i in 1:length(mid_LN$genotype)){
 mid_LN$male <- males
 mid_LN <- na.omit(mid_LN)
 
-write_csv(mid_LN, 'mid_LN.csv')
+write_csv(mid_LN, 'mid_LN_v2.csv')
 
 data_mid_LN <- mid_LN[mid_LN$male %in% c("B73", "Mo17"),] %>% group_by(male,bands) %>% 
   summarise(mean.heterosis = mean(heterosis, na.rm=TRUE), sd.heterosis = sd(heterosis, na.rm = TRUE), se.heterosis= sd(heterosis, na.rm=TRUE)/sqrt(length(heterosis)), 
             max = max(heterosis, na.rm = TRUE), min = min(heterosis, na.rm = TRUE))
 
+
 ######## mid parent heterosis calculation for high nitrogen condition ###########
 
 ## heterosis calculation for high nitrogen condition
-blups_HN <- blups[blups$Trt == "HN" & blups$Rep == 1 ,]
+blups_HN <- blups[blups$Trt == "HN" & blups$Rep == 2 ,]
 
 het <- blups_HN %>% filter(grepl(" X ", genotype))
 

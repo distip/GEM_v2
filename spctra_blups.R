@@ -656,10 +656,27 @@ blups_merged_v2$new_GID <- factor(blups_merged_v2$new_GID)
 
 blups_merged_v2 <- blups_merged_v2[blups_merged_v2$Rep == 2 , ]
 
+              ################3####### Adding SS NSS information on Blup_merged_v2######################
+blups_merged_v2 <- blups_merged_v2 %>% mutate(het_grp = NA, .before=note) # adding a new column for heterotic groups 
+hybrids <- blups_merged_v2 %>% filter(grepl(' X ', genotype)) #applying a filter for the genotypes containing ' X '
 
-data <- spectra_comb.blups.melt.2[spectra_comb.blups.melt.2$Trt == 'HN',] %>% group_by(wavelength,note) %>% 
-  summarise(mean.ref = mean(value, na.rm=TRUE), sd.ref = sd(value, na.rm = TRUE), se.ref= sd(value, na.rm=TRUE)/sqrt(length(value)), 
-            max = max(value, na.rm = TRUE), min = min(value, na.rm = TRUE))
+for (i in 1:length(hybrids$genotype)){
+  id <- hybrids$genotype[i]
+  inbred <- strsplit(as.character(id), ' X ')[[1]][1]
+  if(strsplit(as.character(id), ' X ')[[1]][2] == 'B73'){
+    blups_merged_v2[blups_merged_v2$genotype == inbred, "het_grp"] <- 'NSS'
+  }
+  else if(strsplit(as.character(id), ' X ')[[1]][2] == 'Mo17'){
+    blups_merged_v2[blups_merged_v2$genotype == inbred, "het_grp"] <- 'SS'
+  }
+  else if(id == 'B73'){
+    blups_merged_v2[blups_merged_v2$genotype == id, "het_grp"] <- 'NSS'
+  }
+  else {
+    blups_merged_v2[blups_merged_v2$genotype == inbred, "het_grp"] <- 'other'
+  }
+}
+
 
 
 ggplot(blups_merged_v2, aes(rows, ranges, color=X550)) + 
@@ -699,7 +716,7 @@ data2 <- data %>% group_by(wavelength,Trt) %>%
             max = max(value, na.rm = TRUE), min = min(value, na.rm = TRUE))
 
 
-data <-melt(blups_merged_v2, id.vars = c('PLOT.ID','new_GID', 'genotype','rows', 'ranges', 'Block' ,'Rep', 'Trt', 'year', 'note', 'Group', 'Calibration', 'ASD'))
+data <-melt(blups_merged_v2, id.vars = c('PLOT.ID','new_GID', 'het_grp', 'genotype','rows', 'ranges', 'Block' ,'Rep', 'Trt', 'year', 'note', 'Group', 'Calibration', 'ASD'))
 a <- sapply(strsplit(as.character(data$variable), '[.]'), '[[', 1)
 data$wavelength <- as.numeric(substr(a,2,5))
 View(data)
@@ -722,6 +739,9 @@ ggplot(spectra_comb.blups.sub.melt[which(spectra_comb.blups.sub.melt$Trt == 'HN'
   theme(legend.position = 'none')
 
 
+
+
+
 ggplot() +
   geom_line(data=data[which(data$Trt == 'LN'),],aes(wavelength, value, group= new_GID, color='LN'), size=0.1)+
   geom_line(data=data[which(data$Trt == 'HN'),], aes(wavelength, value, group= new_GID, color='HN'), size=0.1)+
@@ -734,5 +754,39 @@ ggplot(data = data)+
   theme_bw()
 
 
+## visiulasing the B73 and Mo17 
+
+data_checks <- data[data$genotype %in% c('B73', 'Mo17'),]  ## only the genotypes B73 and Mo17
+data_others <- data[!(data$genotype %in% c('B73', 'Mo17')) & data$Group != 'Hybrid', ]  ## only the inbreds except B73 and Mo17
 
 
+
+
+data_others_grp <- data_others %>% group_by(wavelength, Trt, het_grp) %>% summarise(mean.ref = mean(value, na.rm= TRUE), se.ref= sd(value, na.rm=TRUE)/sqrt(length(value)))
+
+p_parents <- ggplot(data=data_checks,aes(color=genotype)) +
+  geom_line(data=data_checks[which(data_checks$Trt == 'LN'),],aes(wavelength, value, group= genotype, linetype='LN'), size=0.4)+
+  geom_line(data=data_checks[which(data_checks$Trt == 'HN'),], aes(wavelength, value, group= genotype, linetype='HN'), size=0.4)+
+  scale_shape_manual(name='Treatment',  values = c('HN'= 'dashed', 'LN' = 'solid'))
+ 
+p_inb <- ggplot() +
+  geom_line(data=data_others_grp[data_others_grp$Trt == 'LN' , ], aes(wavelength, mean.ref, color= het_grp))+
+  geom_line(data=data_others_grp[data_others_grp$Trt == 'HN' , ], aes(wavelength, mean.ref, color=het_grp))
+
+p_b73 <- ggplot(data= data_checks[data_checks$genotype == 'B73' , ])+
+  geom_line(aes(wavelength, value , group = Trt))
+
+p_NSS <- ggplot(data= na.omit(data_others_grp[data_others_grp$het_grp == 'NSS',]))+
+  geom_line(aes(wavelength, mean.ref , group= Trt))
+
+p_NSS
+p_b73
+
+View(data_checks)
+
+
+data_grp <- data %>% group_by(genotype, wavelength, Trt, het_grp) %>% summarise(mean.ref = mean(value, na.rm= TRUE), se.ref= sd(value, na.rm=TRUE)/sqrt(length(value)))
+
+ggplot()+
+  geom_line(data=data_grp[data_grp$genotype == 'B73', ], aes(wavelength, mean.ref, color=Trt))+
+  geom_line(data=data_grp[data_grp$het_grp == 'NSS',], aes(wavelength, mean.ref, color=Trt))
