@@ -29,13 +29,6 @@ blups$PLOT.ID <- factor(blups$PLOT.ID)
 blups$ASD  <- factor(blups$ASD)
 blups$Calibration <- factor(blups$Calibration)
 
-blups.melt <- melt(blups, id.vars = c('genotype', 'PLOT.ID', 'rows', 'ranges', 'Block', 'Rep', 'Trt', 'year', 'note', 'Calibration', 'ASD'))
-
-View(blups.melt)
-colnames(blups.melt)[12:13] <- c('band', 'reflectance')
-
-blups.melt$band <- as.character(blups.melt$band)
-blups.melt$band <- as.numeric(substr(blups.melt$band,2,5))
 
 str(blups.melt)
 

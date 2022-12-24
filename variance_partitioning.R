@@ -139,7 +139,7 @@ for(i in 1:length(bands)){
 }
 
 var.part.list.melt <- melt(var.part.list)
-var.part.list.melt$source <- rep(c('LN', 'HN', 'Nitrate', 'Plasticity', 'Residual'), 10750/5)
+var.part.list.melt$source <- rep(c('Genotypes LN', 'Genotypes HN', 'Nitrate', 'N X G', 'Residual'), 10755/5)
 var.part.list.melt$source <- factor(var.part.list.melt$source)
 colnames(var.part.list.melt) <- c('values', 'band', 'source')
 var.part.list.melt$band <- as.numeric(var.part.list.melt$band)
@@ -149,16 +149,41 @@ var.part.list.melt$band <- as.numeric(var.part.list.melt$band)
 
 ggplot(var.part.list.melt, aes(fill= source, y=values, x=band)) +
   geom_bar(position='fill', stat='identity', width = 1, alpha=0.8)+
-  theme_classic()+
+  #theme_classic()+
   theme(legend.background = element_rect(fill = '#FFCC66',color='grey50',  size=1))+
   scale_fill_brewer(palette= 'Set3')+
-  labs(title = 'Variance Partitioning of Leaf Spectrum' , subtitle = 'lmer(reflectance ~ Trt + genotype + (Trt|genotype), data=temp)' , y ='%', x='wavelengths')
-  
+  labs(title = 'Variance Partitioning of Leaf Spectrum' , y ='Heritabbility (%)', x='wavelengths')+
+  theme_bw(16)
 
 
+            ####### combines plot of variance partitioning and heritability of leaf spectra #####  
+
+heritability <- bands.H2
+colnames(heritability)[1] <- 'band'
+
+hervar <- var.part.list.melt %>% full_join(heritability)
+
+View(hervar)
+
+ggplot(hervar, aes(fill= source, y=values, x=band)) +
+  geom_bar(position='fill', stat='identity', width = 1, alpha=0.8)+
+  #theme_classic()+
+  theme(legend.background = element_rect(fill = '#FFCC66',color='grey50',  size=1))+
+  scale_fill_brewer(palette= 'Set3')+
+  labs(title = 'Variance Partitioning and Heritability of Leaf Spectrum' , y ='Variance Explained (%)', x='Wavelengths (nm)')+
+  geom_line(aes(y=H2))+
+  scale_y_continuous(sec.axis = sec_axis(~.*1, name = 'Heritability (%)'))+
+  geom_vline(xintercept = 550, size=0.2)+
+  geom_vline(xintercept = 710, size=0.2)+
+  geom_vline(xintercept = 1445, size=0.2)+
+  geom_vline(xintercept = 1890, size=0.2)+
+  geom_vline(xintercept = 2020, size=0.2)+
+  geom_vline(xintercept = 2410, size=0.2)+
+  theme_bw(16)
 
 
+mean(hervar[hervar$source =='Residual' & hervar$band > 400 & hervar$band <  700,  'values' ])
 
-
-
-
+hervar_summarised <- hervar[hervar$source %in% c('Genotypes HN', 'Genotypes LN') & hervar$band > 1328 & hervar$band < 2500 , ] %>% group_by(band) %>% summarise(genotype_total = sum(values))
+View(hervar_summarised)
+mean(hervar_summarised$genotype_total)

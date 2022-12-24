@@ -39,14 +39,14 @@ hist(spectra$X730)
 
                                                  ### heat map of the field for one wavelngth ###
 
-ggplot(spectra.new, aes(rows, ranges, color=X730)) + 
-  geom_point(size=1.3) +
+ggplot(spectra.new, aes(rows, ranges, color=X1880)) + 
+  geom_tile(size=3) +
   scale_y_continuous(name='ranges', limits = c(1,13))+
   geom_rect( aes(xmin=0.4, xmax = 51, ymin = 7.5, ymax = 12.5), fill=NA, colour='red')+
   #annotate('rect', xmin=0, xmax = 50, ymin = 7.5, ymax = 12.5, alpha= .1)+
   facet_wrap(Block~Trt)+
-  scale_colour_viridis() +
-  labs(title = 'Range and Row effects on raw leaf spectrum (for only one band)', caption = ' Blocks 1 and 4 = + N , 2 and 3 = -N\nred rectangles are the hybrids ')+
+  scale_colour_viridis(option = 'turbo') +
+  labs(title = 'Range and Row effects on raw leaf spectrum (at 1880nm)', caption = ' Blocks 1 and 4 = + N , 2 and 3 = -N\nred rectangles are the hybrids ')+
   theme_classic()
   #theme(strip.background = element_rect(color = 'black', fill = Trt))
 

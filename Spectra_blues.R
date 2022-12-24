@@ -218,3 +218,106 @@ spectra.blues.sub.melt$wavelength <- as.numeric(substr(a,2,5))
 
 
 
+
+                                  ######################  Blues for CHL #######################33
+
+
+library(lme4)
+library(reshape2)
+library(ggplot2)
+library(rrBLUP)
+
+### The yield data can be found in the file "PhenomeForce_Yield.csv". This can be read 
+### into R using read.csv().
+
+spectra <- read.csv("Raw_spectrum_merged_predicted_CHL")
+View(spectra)
+
+str(spectra)
+
+spectra$Rep <- factor(spectra$Rep)
+spectra$Block <- factor(spectra$Block)
+spectra$year <- factor(spectra$year)
+spectra$genotype <- factor(spectra$genotype)
+spectra$note <- factor(spectra$note)
+spectra$Trt <- factor(spectra$Trt)
+spectra$ASD <- factor(spectra$ASD)
+spectra$Group <- factor(spectra$Group)
+spectra$rows <- factor(spectra$rows)
+spectra$ranges <- factor(spectra$ranges)
+spectra$PLOT.ID <- factor(spectra$PLOT.ID)
+spectra$ASD  <- factor(spectra$ASD)
+spectra$Calibration <- factor(spectra$Calibration)
+
+spectra <- subset(spectra, select = -c(Unnamed..0, X))
+
+spectra <- spectra %>% relocate(CHL , .before = 'X350')
+
+new_GID <- paste(spectra$genotype, spectra$Trt, sep= "_")
+
+spectra_comb <- add_column(spectra, new_GID = new_GID, .after='PLOT.ID')
+
+str(spectra_comb)
+
+spectra_comb$Rep <- factor(spectra_comb$Rep)
+spectra_comb$Block <- factor(spectra_comb$Block)
+spectra_comb$year <- factor(spectra_comb$year)
+spectra_comb$genotype <- factor(spectra_comb$genotype)
+spectra_comb$note <- factor(spectra_comb$note)
+spectra_comb$Trt <- factor(spectra_comb$Trt)
+spectra_comb$ASD <- factor(spectra_comb$ASD)
+spectra_comb$Group <- factor(spectra_comb$Group)
+spectra_comb$rows <- factor(spectra_comb$rows)
+spectra_comb$ranges <- factor(spectra_comb$ranges)
+spectra_comb$PLOT.ID <- factor(spectra_comb$PLOT.ID)
+spectra_comb$ASD  <- factor(spectra_comb$ASD)
+spectra_comb$Calibration <- factor(spectra_comb$Calibration)
+spectra_comb$new_GID  <- factor(spectra_comb$new_GID)
+
+
+
+levels(spectra_comb$Trt)
+
+spectra_comb.list<- spectra_comb
+
+View(spectra_comb.list)
+
+data<- spectra_comb.list[spectra_comb.list['Group'] == 'Inbred' , ]
+
+data.blue.mod<-lmer(CHL~ genotype + (1|Trt) + (1|Rep:Trt) + (1|ASD) , data=data)
+
+### The fixef() function returns the fixed effects of the model. Notice that the first 
+### fixed effect is the intercept. This is also the fixed effect for the first "gid" level,
+### which is 4755014. 
+
+fixef(data.blue.mod)[1:10]
+
+data.int<-fixef(data.blue.mod)[1]
+data.int
+
+### The intercept can be added to the BLUE values to center the BLUEs around the mean
+
+data.blues<-fixef(data.blue.mod)
+data.blues[-1]<-data.blues[-1]+data.int
+
+### The gsub() function can be used to take off the "new_GID" character string in the names
+### of the BLUEs. 
+
+names(data.blues)[1:10]
+names(data.blues)[1]<-levels(data$genoype)[1]
+gsub("genotype", "", names(data.blues))[1:10]
+
+names(data.blues)<-gsub("genotype", "", names(data.blues))
+data.blues[1:10]
+
+### Using dataframe(), the data can be stored in a data frame with two columns
+### for "genotype" and "grain.data.blue".
+
+data.blues<-data.frame(names(data.blues), data.blues)
+colnames(data.blues)<-c("genotype", "CHL")
+head(data.blues)
+
+hist(data.blues$CHL)
+
+write.csv(data.blues, './blues_CHL_only_inbreds.csv', row.names = FALSE)
+

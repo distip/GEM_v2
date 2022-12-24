@@ -1,3 +1,4 @@
+fullspectra_plots_spatial_cor.csv
 fullspectra_plots
 ASD_2
 ASD_1
@@ -6,3 +7,4 @@ Raw_spectrum_merged
 .RData
 fullspectra_plots_spatial_cor.csv
 .Rhistory
+.RDataTmp1

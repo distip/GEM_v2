@@ -346,10 +346,10 @@ res.pca <- prcomp(blups_merged_v2[ , 14:length(colnames(blups_merged_v2))], scal
 
 basic_plot <- fviz_pca_ind(res.pca, label= 'none')
 basic_plot
-ggplot(cbind(basic_plot$data, blups_merged_v2[, c('Trt', 'note', 'Group')]), aes(x=x, y=y, shape=Group))+
-  geom_point(aes(col=Trt), size=2)+
+ggplot(cbind(basic_plot$data, blups_merged_v2[, c('Trt', 'note', 'Group')]), aes(x=x, y=y, color=Trt))+
+  geom_point(aes(shape=Group), size=2)+
   scale_shape_manual(values = c(1,16))+
   labs(title = 'PCA', x='Dim1 (73.8%)', y= 'Dim2 (19.8%)')+
-  #stat_ellipse()+
+  stat_ellipse()+
   theme_bw(14)
 

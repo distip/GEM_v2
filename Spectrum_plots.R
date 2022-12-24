@@ -19,13 +19,19 @@ spectra$genotype <- factor(spectra$genotype)
 spectra$note <- factor(spectra$note)
 spectra$Trt <- factor(spectra$Trt)
 spectra$ASD <- factor(spectra$ASD)
-spectra <- subset(spectra, select = -X)
+spectra$Group <- factor(spectra$Group)
+spectra$rows <- factor(spectra$rows)
+spectra$ranges <- factor(spectra$ranges)
+spectra$PLOT.ID <- factor(spectra$PLOT.ID)
+spectra$ASD  <- factor(spectra$ASD)
+spectra$Calibration <- factor(spectra$Calibration)
+spectra <- subset(spectra, select = -c( X ,Unnamed..0))
 
-spectra.sub <- spectra #[which(spectra$ASD %in% c(1,2)),]
-spectra.sub.melt <- melt(spectra.sub, id.vars = c('PLOT.ID', 'Block' ,'Rep', 'Trt', 'year', 'genotype', 'note', 'Calibration', 'ASD'))
+spectra.sub <- spectra[spectra$X350 > 0,]
+spectra.sub.melt <- melt(spectra.sub, id.vars = c('PLOT.ID', 'Block' ,'Rep', 'Trt', 'year', 'genotype', 'note', 'Group', 'Calibration', 'ASD', 'rows', 'ranges'))
 View(spectra.sub.melt)
 
-colnames(spectra.sub.melt)[10:11] <- c('band', 'reflectance')
+colnames(spectra.sub.melt)[13:14] <- c('band', 'reflectance')
 
 spectra.sub.melt$band <- as.character(spectra.sub.melt$band)
 spectra.sub.melt$band <- as.numeric(substr(spectra.sub.melt$band,2,5))
@@ -41,8 +47,9 @@ str(spectra.sub.melt.grouped)
 plot.son <- ggplot() + 
 geom_line(data=spectra.sub.melt.grouped[which(spectra.sub.melt.grouped$Trt== 'HN'),], aes(band, reflect, group=genotype,  color='HN'), size=0.2)+ 
   geom_line(data=spectra.sub.melt.grouped[which(spectra.sub.melt.grouped$Trt== 'LN'),], aes(band, reflect, group=genotype,  color='LN'), size=0.2, alpha=0.4) +
-  scale_colour_manual(name= 'Treatment', values=c('HN' = 'green', 'LN' = 'yellow'))+
-  labs(title = 'Leaf spectra under two nitrogen treatments (raw spectrum)')
+  scale_colour_manual(name= 'Treatment', values=c('HN' = 'green', 'LN' = 'orange'))+
+  labs(title = 'Leaf spectra under two nitrogen treatments (raw spectrum)')+
+  theme_bw()
   
 
 plot.son

@@ -26,6 +26,33 @@ blups$ASD  <- factor(blups$ASD)
 
 
 
+############Looking at hybrids and inbreds averages ###################
+
+
+blups.melt <- melt(blups, id.vars = c('new_GID','genotype', 'PLOT.ID', 'rows', 'ranges', 'Block', 'Rep', 'Trt', 'year', 'note', 'Group', 'Calibration', 'ASD'))
+
+View(blups.melt)
+colnames(blups.melt)[14:15] <- c('band', 'reflectance')
+
+blups.melt$band <- as.character(blups.melt$band)
+blups.melt$band <- as.numeric(substr(blups.melt$band,2,5))
+
+data <- blups.melt %>% group_by(Trt, band, Group) %>% summarise(mean.ref = mean(reflectance, na.rm=TRUE), sd.ref = sd(reflectance, na.rm = TRUE), se.ref= sd(reflectance, na.rm=TRUE)/sqrt(length(reflectance)), 
+                                                                max = max(reflectance, na.rm = TRUE), min = min(reflectance, na.rm = TRUE))
+
+plt_blups <- ggplot(data=data[data$Trt == 'HN',], aes(x=band, group= Group)) +
+  geom_line(aes(y=mean.ref, color=Group), size = 0.7)+
+  geom_ribbon(aes(ymin=mean.ref-sd.ref , ymax=mean.ref+sd.ref, fill= Group),alpha=0.2)+
+  labs(title = 'Leaf spectra inbred vs hybrids under HN', y = 'Reflectance', caption = '**Envelopes represent 1 se from the mean')+
+  theme_bw(16)+
+  facet_zoom( xlim= c(500,600))
+  
+
+plt_blups
+
+
+
+
 ########################   CALCULATION OF MID-PARENT HETEROSIS   #####################################
 ## heterosis calculation for low nitrogen condition
 blups_LN <- blups[blups$Trt == "LN" & blups$Rep == 2 ,]
@@ -325,12 +352,12 @@ write.csv(plot_data, 'heterosis_data.csv')
 
 sub_plot_data = plot_data[plot_data$Htype == 'mid',]
 
-theme_set(theme_bw(10))
+theme_set(theme_bw(16))
 p6 <- ggplot(data=sub_plot_data, aes(x=bands, group= male)) +
   geom_line(data= sub_plot_data[sub_plot_data$Trt == 'HN',], aes( x= bands,y=mean.heterosis, linetype=male, color= Trt),size = 0.7)+
   geom_ribbon(data= sub_plot_data[sub_plot_data$Trt == 'HN',], aes(ymin=mean.heterosis-se.heterosis , ymax=mean.heterosis+se.heterosis),alpha=0.2)+
-  geom_line(data= sub_plot_data[sub_plot_data$Trt == 'LN',], aes( x= bands,y=mean.heterosis,linetype=male, color = Trt), size = 0.7)+
-  geom_ribbon(data= sub_plot_data[sub_plot_data$Trt == 'LN',], aes(ymin=mean.heterosis-se.heterosis , ymax=mean.heterosis+se.heterosis),alpha=0.2)+
+  geom_line(data= sub_plot_data[sub_plot_data$Trt == 'LN',], aes( x= bands,y=mean.heterosis,linetype=male, fill = Trt), size = 0.7)+
+  geom_ribbon(data= sub_plot_data[sub_plot_data$Trt == 'LN',], aes(ymin=mean.heterosis-se.heterosis , ymax=mean.heterosis+se.heterosis, color=Trt),alpha=0.2)+
   scale_x_continuous(breaks =c(350, 550, 710, 1445,1890, 2020, 2410, 2500))+
   theme(axis.text.x = element_text(angle=45))+
   labs(title = 'Mid-parent Heterosis under HN and LN conditions', caption = '**Envelopes represent 1 se from the mean')
@@ -357,7 +384,7 @@ analysis_mid_merge <- analysis_mid_HN %>% full_join(analysis_mid_LN)
 analysis_mid_merge$bands <- factor(analysis_mid_merge$bands)
 
 box_mid <- ggplot(data = analysis_mid_merge, aes(x = bands, y = heterosis, fill= male)) + 
-  geom_boxplot(width=0.1, position = position_dodgenudge(width=1))+
+  geom_boxplot(width=0.1, position = position_dodge(width=1))+
   geom_boxplot(width=0.1, position= position_nudge(x = -0.2),  aes(fill= Trt))+
   #annotate('text' , x=0.8 , y= 22, label='p-value < 2.2e-16')+
   labs(title = 'MPH values of Spectra in 6 hotspots')
