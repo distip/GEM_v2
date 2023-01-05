@@ -30,6 +30,9 @@ spectra$Calibration <- factor(spectra$Calibration)
 spectra <- subset(spectra, select = -c(X))
 str(spectra)
 
+## removing block 4  ##
+spectra[c(1051:1400), c('leaf_length', 'leaf_width' , 'ear_height', 'flag_leaf',  'plant_height') ] <- NA
+
 levels(spectra$Trt)
 
 spectra.list <- vector('list' , 2)
@@ -89,7 +92,7 @@ names(spectra.blups.list) <- c('HN', 'LN')
 ### The following nested loop will first go through the list of dataframes each containing
 ### hyperspectral data from a single N.
 
-for(i in 1:length(spectra.list)){
+for(i in 2:2){
   for(j in 1:length(bands)){
     ### The hyperspectral data from just one N can be stored in a temporary variable.
     
@@ -103,12 +106,12 @@ for(i in 1:length(spectra.list)){
     
     ### The BLUP model is 
     
-    spectrum.blup.mod <- lmer(reflectance ~ (1|genotype)+(1|ASD)+(1|Rep) , data = temp)
+    spectrum.blup.mod <- lmer(reflectance ~ (1|genotype) + (1|Rep) , data = temp)
     
     ### The variance components can be extracted to calculate broad-sense heritability.
     
     Vg <- data.frame(VarCorr(spectrum.blup.mod))$vcov[1]
-    Ve <- data.frame(VarCorr(spectrum.blup.mod))$vcov[4]
+    Ve <- data.frame(VarCorr(spectrum.blup.mod))$vcov[3]
     H2 <- Vg/(Vg+(Ve/2))
     
     
@@ -153,15 +156,17 @@ bands.H2$bands<- as.numeric(substr(bands.H2$bands,2,5))
 
 ### To plot different lines for each of the different N application, the color can be set to "Trt".
 
-ggplot(bands.H2, aes(bands, H2)) + geom_line()+
-  labs(title = 'Broad Sense Heritabilities Under Different Nitrogen Applications')+
+ggplot(bands.H2[bands.H2$Trt == 'LN', ]) + 
+  geom_bar(stat = 'identity' , aes(x= bands, y=H2))+
+  labs(title = 'Broad Sense Heritabilities')+
+  coord_cartesian(ylim=c(0.50, 1))+
   theme_bw(16)
 
 names(spectra.blups.list[['HN']]) <- sub('.x', '', names(spectra.blups.list[['HN']]))
 
-spectra_columns <- subset(spectra, select = c(1:11))
-merged_1 <- merge(spectra_columns[which(spectra_columns$Trt== 'HN'),], spectra.blups.list[['HN']], by = 'genotype')
-merged_2 <- merge(spectra_columns[which(spectra_columns$Trt== 'LN'),], spectra.blups.list[['LN']], by = 'genotype')
+spectra_columns <- subset(spectra, select = c(1:12))
+merged_1 <- merge(spectra_columns[which(spectra_columns$Trt== 'HN'),], spectra.blups.list[['HN']], by = 'genotype', all.x = TRUE)
+merged_2 <- merge(spectra_columns[which(spectra_columns$Trt== 'LN'),], spectra.blups.list[['LN']], by = 'genotype', all.x = TRUE)
 
 
 blups_merged <- merged_1 %>% full_join(merged_2)

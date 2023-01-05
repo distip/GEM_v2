@@ -323,7 +323,7 @@ write.csv(data.blues, './blues_CHL_only_inbreds.csv', row.names = FALSE)
 
 
 
-              ######################  Blues for Extra Phenos #######################
+              ######################  Blues for Extra Phenos for seperate N treatments #######################
 
 
 
@@ -375,6 +375,9 @@ spectra_comb$new_GID  <- factor(spectra_comb$new_GID)
 
 View(spectra)
 
+## removing block 4  ##
+spectra[c(1051:1400), c('leaf_length', 'leaf_width' , 'ear_height', 'flag_leaf',  'plant_height') ] <- NA
+
 bands <- colnames(spectra)[c(13:17)]
 bands
 
@@ -418,7 +421,7 @@ names(spectra.blues.list) <- c('HN', 'LN')
 ### The following nested loop will first go through the list of dataframes each containing
 ### hyperspectral data from a single N.
 
-for(i in 1:length(spectra.list)){
+for(i in 2:2){  ####!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! HN IS REMOVED BECAUSE THE BLOC 4 IS MISSING !!!!!!!!!!!!!!!!!!!!!!! 
   for(j in 1:length(bands)){
     ### The hyperspectral data from just one N can be stored in a temporary variable.
     
@@ -432,7 +435,7 @@ for(i in 1:length(spectra.list)){
     
     ### The BLUE model is 
     
-    spectrum.blue.mod <- lmer(reflectance ~ genotype + (1|ASD) + (1|Rep) ,  data = temp)
+    spectrum.blue.mod <- lmer(reflectance ~ genotype  +  (1|Rep) ,  data = temp)
     
     
     ### The BLUEs centered around the mean can also be calculated and stored in a dataframe. 
@@ -467,7 +470,11 @@ names(spectra.blues.list[['HN']]) <- sub('.x', '', names(spectra.blues.list[['HN
 
 spectra_one_rep <- spectra[spectra$Rep == 1,]
 spectra_columns <- subset(spectra_one_rep, select = c(1:12))
-merged_1 <- merge(spectra_columns[which(spectra_columns$Trt== 'HN'),], spectra.blues.list[['HN']], by = 'genotype', all.x = TRUE )
+#merged_1 <- merge(spectra_columns[which(spectra_columns$Trt== 'HN'),], spectra.blues.list[['HN']], by = 'genotype', all.x = TRUE )
+
+merged_1 <- spectra_one_rep[spectra_one_rep$Trt == 'HN', ]
+merged_1 <- subset(merged_1 , select = -c(Row, Ran., Leaf.Length.1, Leaf.Width.1, Leaf.Length.2, Leaf.Width.2, Ear.Height.1, Flag.Leaf.Height.1, Plant.Height.1,
+                                          Ear.Height.2, Flag.Leaf.Height.2, Plant.Height.2, Yang.Field.Notes, Inbred.or.Hybrid., Data.missing.))
 merged_2 <- merge(spectra_columns[which(spectra_columns$Trt== 'LN'),], spectra.blues.list[['LN']], by = 'genotype', all.x = TRUE )
 
 
