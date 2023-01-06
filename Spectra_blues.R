@@ -274,17 +274,17 @@ spectra_comb$ASD  <- factor(spectra_comb$ASD)
 spectra_comb$Calibration <- factor(spectra_comb$Calibration)
 spectra_comb$new_GID  <- factor(spectra_comb$new_GID)
 
-
+View(spectra_comb)
 
 levels(spectra_comb$Trt)
 
-spectra_comb.list<- spectra_comb
+spectra_comb.list<- spectra
 
 View(spectra_comb.list)
 
-data<- spectra_comb.list[spectra_comb.list['Group'] == 'Inbred' , ]
+data<- spectra_comb.list
 
-data.blue.mod<-lmer(CHL~ genotype + (1|Trt) + (1|Rep:Trt) + (1|ASD) , data=data)
+data.blue.mod<-lmer(CHL~ genotype + (1|Trt) + (1|Rep:Trt) , data=data)
 
 ### The fixef() function returns the fixed effects of the model. Notice that the first 
 ### fixed effect is the intercept. This is also the fixed effect for the first "gid" level,
@@ -300,6 +300,10 @@ data.int
 data.blues<-fixef(data.blue.mod)
 data.blues[-1]<-data.blues[-1]+data.int
 
+############# BURASI YENI EKLENDI ONEMLI !!!!!!! #########
+
+names(data.blues)[1]<-levels(spectra$genotype)[1]
+###########################################################
 ### The gsub() function can be used to take off the "new_GID" character string in the names
 ### of the BLUEs. 
 
@@ -316,13 +320,29 @@ data.blues[1:10]
 data.blues<-data.frame(names(data.blues), data.blues)
 colnames(data.blues)<-c("genotype", "CHL")
 head(data.blues)
+rownames(data.blues) <- NULL
 
 hist(data.blues$CHL)
 
-write.csv(data.blues, './blues_CHL_only_inbreds.csv', row.names = FALSE)
+write.csv(data.blues, './blues_CHL.csv', row.names = FALSE)
 
 
+spectra$Rep <- factor(spectra$Rep)
+spectra$Block <- factor(spectra$Block)
+spectra$year <- factor(spectra$year)
+spectra$genotype <- factor(spectra$genotype)
+spectra$note <- factor(spectra$note)
+spectra$Trt <- factor(spectra$Trt)
+spectra$ASD <- factor(spectra$ASD)
+spectra$Group <- factor(spectra$Group)
+spectra$rows <- factor(spectra$rows)
+spectra$ranges <- factor(spectra$ranges)
+spectra$PLOT.ID <- factor(spectra$PLOT.ID)
+spectra$ASD  <- factor(spectra$ASD)
+spectra$Calibration <- factor(spectra$Calibration)
 
+spectra <- subset(spectra, select = -c(X))
+str(spectra)
               ######################  Blues for Extra Phenos for seperate N treatments #######################
 
 

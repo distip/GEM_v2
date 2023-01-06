@@ -1,0 +1,15 @@
+
+VCFtools - 0.1.16
+(C) Adam Auton and Anthony Marcketta 2009
+
+Parameters as interpreted:
+	--gzvcf BGEM_subset.vcf.gz
+	--max-alleles 2
+	--freq2
+	--out ./vcftools/BGEM_subset
+
+Using zlib version: 1.2.11
+After filtering, kept 222 out of 222 Individuals
+Outputting Frequency Statistics...
+After filtering, kept 105089 out of a possible 105089 Sites
+Run Time = 2.00 seconds
