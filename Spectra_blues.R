@@ -230,7 +230,7 @@ library(rrBLUP)
 ### The yield data can be found in the file "PhenomeForce_Yield.csv". This can be read 
 ### into R using read.csv().
 
-spectra <- read.csv("Raw_spectrum_merged_predicted_CHL")
+spectra <- read.csv("Raw_spectrum_merged_predicted_CHL.csv")
 View(spectra)
 
 str(spectra)
@@ -284,7 +284,7 @@ View(spectra_comb.list)
 
 data<- spectra_comb.list
 
-data.blue.mod<-lmer(CHL~ genotype + (1|Trt) + (1|Rep:Trt) , data=data)
+data.blue.mod<-lmer(CHL~ genotype + (1|Trt) + (1|genotype:Trt) + (1|Rep) , data=data)
 
 ### The fixef() function returns the fixed effects of the model. Notice that the first 
 ### fixed effect is the intercept. This is also the fixed effect for the first "gid" level,
@@ -578,3 +578,104 @@ ggplot(blues_merged, aes(rows, ranges, color=X730)) +
 spectra.blues.sub.melt <- melt(spectra.blues.list)
 a <- sapply(strsplit(as.character(spectra.blues.sub.melt$variable), '[.]'), '[[', 1)
 spectra.blues.sub.melt$wavelength <- as.numeric(substr(a,2,5))
+
+
+
+
+
+######################  Blues for CHL for seperate N TReatmens #######################33
+
+
+library(lme4)
+library(reshape2)
+library(ggplot2)
+library(rrBLUP)
+
+### The yield data can be found in the file "PhenomeForce_Yield.csv". This can be read 
+### into R using read.csv().
+
+spectra <- read.csv("Raw_CHL_predicted")
+
+
+str(spectra)
+
+spectra$Rep <- factor(spectra$Rep)
+spectra$genotype <- factor(spectra$genotype)
+spectra$Trt <- factor(spectra$Trt)
+spectra$Group <- factor(spectra$Group)
+spectra$PLOT.ID <- factor(spectra$PLOT.ID)
+
+
+View(spectra)
+
+
+
+spectra_comb <- spectra[spectra$Trt == 'LN' & spectra$Group == 'Inbred' ,]
+
+levels(spectra_comb$Trt)
+
+spectra_comb.list<- spectra_comb
+
+data<- spectra_comb.list
+
+data.blue.mod<-lmer(CHL~ genotype + (1|Rep) + (1|Rep:genotype) , data=data)
+
+### The fixef() function returns the fixed effects of the model. Notice that the first 
+### fixed effect is the intercept. This is also the fixed effect for the first "gid" level,
+### which is 4755014. 
+
+fixef(data.blue.mod)[1:10]
+
+data.int<-fixef(data.blue.mod)[1]
+data.int
+
+### The intercept can be added to the BLUE values to center the BLUEs around the mean
+
+data.blues<-fixef(data.blue.mod)
+data.blues[-1]<-data.blues[-1]+data.int
+
+############# BURASI YENI EKLENDI ONEMLI !!!!!!! #########
+
+names(data.blues)[1]<-levels(spectra$genotype)[1]
+###########################################################
+### The gsub() function can be used to take off the "new_GID" character string in the names
+### of the BLUEs. 
+
+names(data.blues)[1:10]
+gsub("genotype", "", names(data.blues))[1:10]
+
+names(data.blues)<-gsub("genotype", "", names(data.blues))
+data.blues[1:10]
+
+### Using dataframe(), the data can be stored in a data frame with two columns
+### for "genotype" and "grain.data.blue".
+
+data.blues<-data.frame(names(data.blues), data.blues)
+colnames(data.blues)<-c("genotype", "CHL")
+head(data.blues)
+rownames(data.blues) <- NULL
+
+hist(data.blues$CHL)
+
+write.csv(data.blues, './blues_CHL_HN_only_inbreds.csv', row.names = FALSE)
+write.csv(data.blues, './blues_CHL_LN_only_inbreds.csv', row.names = FALSE)
+
+ggplot(data=spectra)+
+  geom_density(aes(CHL, fill=Group), alpha=0.3)+
+  theme_classic()+
+  labs(title='CHL contents Inbreds vs Hybrids')+
+  scale_fill_brewer(palette = 'Spectral')
+
+
+data_LN <- read.csv('blues_CHL_LN_only_inbreds.csv')
+data_HN <- read.csv('blues_CHL_HN_only_inbreds.csv') 
+
+names(data_LN)[2] <- 'CHL_LN'
+names(data_HN)[2] <- 'CHL_HN'
+
+
+blues_CHL_LN_HN_sperately <- merge(data_LN, data_HN , by = 'genotype')
+
+View(blues_CHL_LN_HN_sperately)
+
+write.csv(blues_CHL_LN_HN_sperately, './blues_CHL_LN_HN_seperately.csv')

@@ -11,7 +11,7 @@ library(grid)
 
 
 
-spectra <- read.csv("Raw_spectrum_merged")
+spectra <- read.csv("Raw_spectrum_merged.csv")
 View(spectra)
 
 str(spectra)
@@ -1115,31 +1115,18 @@ View(data)
                                                   
 
                                         ################### Calculating BLUPS for CHL in deifferent Nitrogen TRT ######################
-spectra <- read.csv("Raw_spectrum_merged_predicted_CHL.csv")
-)
+spectra <- read.csv("Raw_CHL_predicted")
+spectra <- spectra[spectra$Group == 'Inbred', ]
 
 str(spectra)
 
 spectra$Rep <- factor(spectra$Rep)
-spectra$Block <- factor(spectra$Block)
-spectra$year <- factor(spectra$year)
 spectra$genotype <- factor(spectra$genotype)
-spectra$note <- factor(spectra$note)
 spectra$Trt <- factor(spectra$Trt)
-spectra$ASD <- factor(spectra$ASD)
 spectra$Group <- factor(spectra$Group)
-spectra$rows <- factor(spectra$rows)
-spectra$ranges <- factor(spectra$ranges)
 spectra$PLOT.ID <- factor(spectra$PLOT.ID)
-spectra$ASD  <- factor(spectra$ASD)
-spectra$Calibration <- factor(spectra$Calibration)
-
-spectra <- subset(spectra, select = -c(X))
 
 View(spectra)
-
-spectra <- spectra %>% relocate(CHL , .before = 'X350')
-
 
 levels(spectra$Trt)
 
@@ -1165,7 +1152,7 @@ View(spectra.list)
 ### contains a different combination of the bands and N. An "H2" column can be added
 ### to store the broad-sense heritability estimates. 
 
-bands <- colnames(spectra)[c(12)]
+bands <- colnames(spectra)[c(6)]
 bands
 
 Trt <- as.character(levels(spectra$Trt))
@@ -1246,8 +1233,7 @@ for(i in 1:length(spectra.list)){
     
   }
 }
-
-View(spectra)
+View(spectra.blups.list)
 head(bands.H2)
 
 
@@ -1264,21 +1250,20 @@ bands.H2$bands<- as.numeric(substr(bands.H2$bands,2,5))
 
 ### To plot different lines for each of the different N application, the color can be set to "Trt".
 
-ggplot(bands.H2, aes(y=H2, x=Trt)) + geom_bar(stat='identity', Group=Trt)+
-  labs(title = 'Broad Sense Heritabilities Under Different Nitrogen Applications')+
-  theme_bw(16)
+ggplot(bands.H2, aes(y=H2, x=Trt)) + geom_bar(stat='identity')+
+  labs(title = 'CHL Heritability (Only Inbreds)')+
+  ylim(c(0, 0.8))+
+  theme_bw(10)
 
-names(spectra.blups.list[['HN']]) <- sub('.x', '', names(spectra.blups.list[['HN']]))
+CHL_blups_HN <- spectra.blups.list[['HN']]
+CHL_blups_LN <- spectra.blups.list[['LN']]
+names(CHL_blups_HN)[2] <- 'CHL_blups_HN'
+names(CHL_blups_LN)[2] <- 'CHL_blups_LN'
 
-spectra_columns <- subset(spectra, select = c(1:11))
-merged_1 <- merge(spectra_columns[which(spectra_columns$Trt== 'HN'),], spectra.blups.list[['HN']], by = 'genotype')
-merged_2 <- merge(spectra_columns[which(spectra_columns$Trt== 'LN'),], spectra.blups.list[['LN']], by = 'genotype')
+blups_CHL_LN_HN_sperately <- merge(CHL_blups_HN, CHL_blups_LN , by = 'genotype')
+View(blups_CHL_LN_HN_sperately)
 
-
-blups_merged <- merged_1 %>% full_join(merged_2)
-blups_merged$Block <- factor(blups_merged$Block, levels= c('2', '4', '1', '3'))
-write.csv(blups_merged, './CHL_blups.csv', row.names = FALSE)
-blups_merged <- read.csv('spectra_blups.csv')
+write.csv(blups_CHL_LN_HN_sperately, './blups_CHL_LN_HN_seperately.csv')
 
 
 
