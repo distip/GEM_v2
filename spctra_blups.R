@@ -104,6 +104,7 @@ ggplot(bands.H2, aes(band ,H2)) +
   labs(title = 'Broad Sense Heritability of the Bands')
 
 #################### Calculating blups for seperate N treatments ###########################3
+spectra <- read.csv("Raw_spectrum_merged.csv")
 
 levels(spectra$Trt)
 
