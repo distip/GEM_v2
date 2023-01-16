@@ -57,8 +57,8 @@ ggplot(data=spectra.sub.melt, aes(band, reflectance, color=Trt)) + geom_line()
 ## put N in the model
 
 ## calculating the BLUPs for spectra
-bands <- (colnames(spectra)[-c(1:9)])
-bands_df <-as.data.frame(colnames(spectra)[-c(1:9)])
+bands <- (colnames(spectra)[-c(1:12)])
+bands_df <-as.data.frame(colnames(spectra)[-c(1:12)])
 bands 
 bands_df$H2 <- NA
 colnames(bands_df) <- c('band', 'H2')
@@ -74,7 +74,7 @@ for(i in 1:length(bands)){
   temp<-temp[, which(colnames(spectra) %in% c('genotype', 'Block', 'Trt', 'Rep', 'ASD', bands[i]))]
   colnames(temp)[6] <- 'reflectance'
   
-  spectrum.blup.mod<-lmer(reflectance~(1|genotype)+(1|Trt:Block), data=temp)
+  spectrum.blup.mod<-lmer(reflectance~(1|genotype)+ (1|Rep) + (1|Trt) + (1|Trt:genotype) , data=temp)
 
   Vg <- data.frame(VarCorr(spectrum.blup.mod))$vcov[1]
   Ve <- data.frame(VarCorr(spectrum.blup.mod))$vcov[5]
@@ -102,6 +102,11 @@ bands.H2$band <- as.numeric(substr(bands.H2$band,2,5))
 ggplot(bands.H2, aes(band ,H2)) +
   geom_line()+
   labs(title = 'Broad Sense Heritability of the Bands')
+
+view(spectral.blups.list)
+
+write.csv(spectral.blups.list, 'spectra_blups_N_combined_nonASD.csv', row.names = FALSE)
+
 
 #################### Calculating blups for seperate N treatments ###########################3
 spectra <- read.csv("Raw_spectrum_merged.csv")
