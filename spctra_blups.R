@@ -70,7 +70,7 @@ colnames(spectral.blups.list) <- 'genotype'
 
 
 for(i in 1:length(bands)){
-  temp <- spectra
+  temp <- spectra[spectra$Group == 'Inbred',]
   temp<-temp[, which(colnames(spectra) %in% c('genotype', 'Block', 'Trt', 'Rep', 'ASD', bands[i]))]
   colnames(temp)[6] <- 'reflectance'
   
@@ -105,7 +105,7 @@ ggplot(bands.H2, aes(band ,H2)) +
 
 view(spectral.blups.list)
 
-write.csv(spectral.blups.list, 'spectra_blups_N_combined_nonASD.csv', row.names = FALSE)
+write.csv(spectral.blups.list, 'spectra_blups_N_combined_nonASD_only_inbreds.csv', row.names = FALSE)
 
 
 #################### Calculating blups for seperate N treatments ###########################3
