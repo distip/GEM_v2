@@ -101,8 +101,8 @@ for(i in 1:length(spectra.list)){
     ### The BLUPs can be merged based on the "genotype" column with the existing dataframes 
     ### in the BLUPs list using the merge() function.
     
-    spectra.blues.list[[i]] <- merge(spectra.blues.list[[i]], spectra.blues.temp, by = 'genotype')
-    
+    spectra.blues.list[[i]] <- merge(spectra.blues.list[[i]], spectra.blues.temp, by = 'genotype', all.x= TRUE)
+  
     ### counters can be used to track the progress
     
     print(i)
@@ -475,7 +475,7 @@ for(i in 2:2){  ####!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! HN IS REMOVED B
     ### The BLUPs can be merged based on the "genotype" column with the existing dataframes 
     ### in the BLUPs list using the merge() function.
     
-    spectra.blues.list[[i]] <- merge(spectra.blues.list[[i]], spectra.blues.temp, by = 'genotype')
+    spectra.blues.list[[i]] <- merge(spectra.blues.list[[i]], spectra.blues.temp, by = 'genotype', all.x = TRUE)
     
     ### counters can be used to track the progress
     
