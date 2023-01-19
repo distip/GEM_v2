@@ -19,9 +19,13 @@ melted <- melt(data_non_na, id.vars= c('PLOT.ID', 'Group', 'Trt', 'genotype', 'n
 View(melted)
 
 
-ggplot(data = melted[melted$Group =='Inbred',])  +
+ggplot(data = melted[melted$Group =='Inbred', ])  +
   geom_density(aes(value, fill=Trt), alpha=0.3)+
   theme_bw(14)+
   facet_wrap(vars(variable), scales = 'free')+
   theme(axis.ticks= element_blank(), axis.text.y = element_blank(), axis.text.x = element_blank())+
   labs(title= 'Inbreds under HN and LN - After outlier (1.5 IQR)')
+
+
+
+

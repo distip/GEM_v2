@@ -8,6 +8,7 @@ library(viridisLite)
 library(viridis)
 library(grid)
 
+setwd('/home/schnablelab/deniz/GEM_v2/GEM_v2/')
 data <- read_csv('blups_merged_v2')
 data <- data.frame(data)
 
@@ -26,16 +27,26 @@ data$ASD  <- factor(data$ASD)
 data$Calibration <- factor(data$Calibration)
 
 View(data)
+                #### Plotting Plasticity for ind wawelengths ####
+data_HN <- data[data$Trt == 'HN',] %>% select(genotype, Group, X560)
+colnames(data_HN)[3] <- 'HN'
+data_LN <- data[data$Trt == 'LN',] %>% select(genotype, Group, X560) 
+colnames(data_LN)[3] <- 'LN'
+distinct<-
+plot_data <- merge(data_HN, data_LN) %>% distinct(genotype, .keep_all= TRUE)
+plot_data <- mutate(plot_data, plasticity = (LN-HN))
+
+plot_data %>% plot_longer(c(HN, LN), names_to = 'month', values_to='percent') %>%
+  mutate(month = factor, )
 
 
-ggplot(data= data %>% select(genotype,X550,Trt))+
-  geom_point(aes(x=Trt, y=X550))+
-  geom_line(aes(x=Trt, y=X550, group=genotype, color='red'))
+
+
 
                                 ####### plasticity calculation ################
-
-bands <- (colnames(spectra)[-c(1:12)])
-bands_df <-as.data.frame(colnames(spectra)[-c(1:12)])
+spectra <- data
+bands <- (colnames(spectra)[-c(1:13)])
+bands_df <-as.data.frame(colnames(spectra)[-c(1:13)])
 bands
 
 spectral.plasticity.list <- data.frame(levels(data$genotype))
@@ -59,7 +70,7 @@ for(j in 1:length(bands)){
   }
 }
 
-bview(spectral.plasticity.list)  
+view(spectral.plasticity.list)  
 
 
 data_group <- data %>% select(genotype, Group)
@@ -76,10 +87,19 @@ colnames(merged_melt)[c(3,4)] <- c('band', 'plasticity')
 merged_melt$band <- as.character(merged_melt$band)
 merged_melt$band<- as.numeric(substr(merged_melt$band,2,5))
 
-p <- ggplot(data=merged_melt, aes(x=band, y=plasticity, color=Group))+ #[merged_melt$Group == 'Inbred', ]
+p <- ggplot(data=merged_melt, 
+            aes(x=band, y=plasticity, color=Group))+ #[merged_melt$Group == 'Inbred', ]
   geom_point(size=0.5, alpha=0.04)+
   guides(colour=guide_legend(override.aes=list(alpha= 1)))
-p + theme_bw()
+p + theme_bw()+
+  geom_vline(xintercept = 560, size=0.2)+
+  geom_vline(xintercept = 710, size=0.2)+
+  geom_vline(xintercept = 1445, size=0.2)+
+  geom_vline(xintercept = 1890, size=0.2)+
+  geom_vline(xintercept = 2010, size=0.2)+
+  geom_vline(xintercept = 2420, size=0.2)+
+  scale_x_continuous(breaks =c(350, 560, 710, 1445,1890, 2010, 2420, 2500))+
+  theme(axis.text.x = element_text(angle=45))
 
 View(spectral.plasticity.list)
 
@@ -87,4 +107,4 @@ spectra_plasticity <- spectral.plasticity.list %>% mutate_if(is.numeric, round, 
 View(spectra_plasticity)
 merged <- merge(data_group, spectra_plasticity)
 
-write.csv(merged, 'spectra_plasticity.csv', row.names = FALSE)
+write.csv(merged, 'spectra_plasticity_from_blups_v1.csv', row.names = FALSE)
