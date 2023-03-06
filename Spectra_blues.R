@@ -6,6 +6,8 @@ library(ggplot2)
 library(tidyverse)
 library(viridisLite)
 library(viridis)
+library(jtools)
+library(lmerTest)
 
 spectra <- read.csv("Raw_spectrum_merged")
 View(spectra)
@@ -226,57 +228,22 @@ library(lme4)
 library(reshape2)
 library(ggplot2)
 library(rrBLUP)
+library(lmerTest)
 
 ### The yield data can be found in the file "PhenomeForce_Yield.csv". This can be read 
 ### into R using read.csv().
 
 spectra <- read.csv("Raw_spectrum_merged_predicted_CHL.csv")
-View(spectra)
+spectra <- spectra[spectra$Group == 'Inbred', ]
+spectra <- spectra %>% select(genotype, Trt, Group, Rep, CHL)
 
 str(spectra)
 
 spectra$Rep <- factor(spectra$Rep)
-spectra$Block <- factor(spectra$Block)
-spectra$year <- factor(spectra$year)
 spectra$genotype <- factor(spectra$genotype)
-spectra$note <- factor(spectra$note)
 spectra$Trt <- factor(spectra$Trt)
-spectra$ASD <- factor(spectra$ASD)
 spectra$Group <- factor(spectra$Group)
-spectra$rows <- factor(spectra$rows)
-spectra$ranges <- factor(spectra$ranges)
-spectra$PLOT.ID <- factor(spectra$PLOT.ID)
-spectra$ASD  <- factor(spectra$ASD)
-spectra$Calibration <- factor(spectra$Calibration)
 
-spectra <- subset(spectra, select = -c(Unnamed..0, X))
-
-spectra <- spectra %>% relocate(CHL , .before = 'X350')
-
-new_GID <- paste(spectra$genotype, spectra$Trt, sep= "_")
-
-spectra_comb <- add_column(spectra, new_GID = new_GID, .after='PLOT.ID')
-
-str(spectra_comb)
-
-spectra_comb$Rep <- factor(spectra_comb$Rep)
-spectra_comb$Block <- factor(spectra_comb$Block)
-spectra_comb$year <- factor(spectra_comb$year)
-spectra_comb$genotype <- factor(spectra_comb$genotype)
-spectra_comb$note <- factor(spectra_comb$note)
-spectra_comb$Trt <- factor(spectra_comb$Trt)
-spectra_comb$ASD <- factor(spectra_comb$ASD)
-spectra_comb$Group <- factor(spectra_comb$Group)
-spectra_comb$rows <- factor(spectra_comb$rows)
-spectra_comb$ranges <- factor(spectra_comb$ranges)
-spectra_comb$PLOT.ID <- factor(spectra_comb$PLOT.ID)
-spectra_comb$ASD  <- factor(spectra_comb$ASD)
-spectra_comb$Calibration <- factor(spectra_comb$Calibration)
-spectra_comb$new_GID  <- factor(spectra_comb$new_GID)
-
-View(spectra_comb)
-
-levels(spectra_comb$Trt)
 
 spectra_comb.list<- spectra
 
@@ -284,7 +251,7 @@ View(spectra_comb.list)
 
 data<- spectra_comb.list
 
-data.blue.mod<-lmer(CHL~ genotype + (1|Trt) + (1|genotype:Trt) + (1|Rep) , data=data)
+data.blue.mod<-lmer(CHL~ genotype + (1|Trt) + (1|Rep:Trt), REML=FALSE , data=data)
 
 ### The fixef() function returns the fixed effects of the model. Notice that the first 
 ### fixed effect is the intercept. This is also the fixed effect for the first "gid" level,
@@ -590,12 +557,14 @@ library(lme4)
 library(reshape2)
 library(ggplot2)
 library(rrBLUP)
+library(lmerTest)
 
 ### The yield data can be found in the file "PhenomeForce_Yield.csv". This can be read 
 ### into R using read.csv().
 
-spectra <- read.csv("Raw_CHL_predicted")
-
+spectra <- read.csv("Raw_spectrum_merged_predicted_CHL.csv")
+spectra <- spectra[spectra$Group == 'Inbred', ]
+spectra <- spectra %>% select(genotype, Trt, Group, Rep, CHL)
 
 str(spectra)
 
@@ -603,14 +572,13 @@ spectra$Rep <- factor(spectra$Rep)
 spectra$genotype <- factor(spectra$genotype)
 spectra$Trt <- factor(spectra$Trt)
 spectra$Group <- factor(spectra$Group)
-spectra$PLOT.ID <- factor(spectra$PLOT.ID)
 
 
 View(spectra)
 
 
 
-spectra_comb <- spectra[spectra$Trt == 'LN' & spectra$Group == 'Inbred' ,]
+spectra_comb <- spectra#[spectra$Trt == 'HN' ,]
 
 levels(spectra_comb$Trt)
 
@@ -618,7 +586,8 @@ spectra_comb.list<- spectra_comb
 
 data<- spectra_comb.list
 
-data.blue.mod<-lmer(CHL~ genotype + (1|Rep) + (1|Rep:genotype) , data=data)
+data.blue.mod<-lmer(CHL~ genotype + (1|Trt) , data=data)
+anova(data.blue.mod)
 
 ### The fixef() function returns the fixed effects of the model. Notice that the first 
 ### fixed effect is the intercept. This is also the fixed effect for the first "gid" level,
@@ -655,6 +624,7 @@ colnames(data.blues)<-c("genotype", "CHL")
 head(data.blues)
 rownames(data.blues) <- NULL
 
+
 hist(data.blues$CHL)
 
 write.csv(data.blues, './blues_CHL_HN_only_inbreds.csv', row.names = FALSE)
@@ -665,6 +635,7 @@ ggplot(data=spectra)+
   theme_classic()+
   labs(title='CHL contents Inbreds vs Hybrids')+
   scale_fill_brewer(palette = 'Spectral')
+
 
 
 data_LN <- read.csv('blues_CHL_LN_only_inbreds.csv')
@@ -678,4 +649,12 @@ blues_CHL_LN_HN_sperately <- merge(data_LN, data_HN , by = 'genotype')
 
 View(blues_CHL_LN_HN_sperately)
 
-write.csv(blues_CHL_LN_HN_sperately, './blues_CHL_LN_HN_seperately.csv')
+write.csv(blues_CHL_LN_HN_sperately, './blues_CHL_LN_HN_seperately.csv', row.names = FALSE)
+
+
+
+plot <- read.csv('blues_CHL_with_gwas_ids_only_inbreds.csv')
+
+plot %>% ggplot()+
+  geom_boxplot(aes(y=CHL_HN))
+

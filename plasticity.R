@@ -8,7 +8,6 @@ library(viridisLite)
 library(viridis)
 library(grid)
 
-setwd('/home/schnablelab/deniz/GEM_v2/GEM_v2/')
 data <- read_csv('blups_merged_v2')
 data <- data.frame(data)
 
@@ -28,18 +27,36 @@ data$Calibration <- factor(data$Calibration)
 
 View(data)
                 #### Plotting Plasticity for ind wawelengths ####
-data_HN <- data[data$Trt == 'HN',] %>% select(genotype, Group, X560)
-colnames(data_HN)[3] <- 'HN'
-data_LN <- data[data$Trt == 'LN',] %>% select(genotype, Group, X560) 
-colnames(data_LN)[3] <- 'LN'
-distinct<-
-plot_data <- merge(data_HN, data_LN) %>% distinct(genotype, .keep_all= TRUE)
-plot_data <- mutate(plot_data, plasticity = (LN-HN))
+data_HN <- data[data$Trt == 'HN',] %>% select(genotype, Group, X560, X710, X1445, X1890, X2010, X2420) %>%
+  melt(id.vars= c('genotype', 'Group'))  
+colnames(data_HN)[3:4] <- c('band', 'HN')
+data_LN <- data[data$Trt == 'LN',] %>% select(genotype, Group, X560, X710, X1445, X1890, X2010, X2420) %>%
+  melt(id.vars= c('genotype', 'Group'))
+colnames(data_LN)[3:4] <- c('band', 'LN')
+plot_data <- merge(data_HN, data_LN)
+plot_data <- mutate(plot_data, plasticity = (LN-HN)/HN,
+                    plasticity = case_when(plasticity < -0.5 ~ -0.5,
+                                           plasticity > 0.5 ~ 0.5,
+                                           TRUE ~ plasticity)) %>% 
+  pivot_longer(c(HN, LN), names_to = 'Trt', values_to='reflectance') 
 
-plot_data %>% plot_longer(c(HN, LN), names_to = 'month', values_to='percent') %>%
-  mutate(month = factor, )
-
-
+plot_data %>% 
+  ggplot(aes(x=Trt, y=reflectance))+
+  geom_line(aes(group=genotype, color=plasticity), show.legend = TRUE, size=0.6)+
+  scale_color_gradient2(name='Plasticity',
+                        high='#FF0000',
+                        mid ='#C0C0C0',
+                        low = '#0000FF',
+                        limits= c(-0.5, 0.5),
+                        breaks = c(0.5, 0.25, 0, -0.25, -0.5),
+                        labels = c('>0.50', '0.25', '0' , '-0.25', '<-0.50'))+
+   geom_boxplot(aes(x=Trt, y=reflectance), width=0.2, outlier.shape = NA, show.legend = FALSE)+
+   geom_point(aes(x=Trt, y=reflectance), size=0.3)+
+   theme_bw(16)+
+   facet_wrap('band', scales = 'free')+
+   labs(title = 'Nitrogen Responses of Selected Wavelengths')+
+   ylab('Reflectance')+
+   xlab('')
 
 
 
@@ -89,9 +106,9 @@ merged_melt$band<- as.numeric(substr(merged_melt$band,2,5))
 
 p <- ggplot(data=merged_melt, 
             aes(x=band, y=plasticity, color=Group))+ #[merged_melt$Group == 'Inbred', ]
-  geom_point(size=0.5, alpha=0.04)+
+  geom_point(size=0.5, alpha=0.1)+
   guides(colour=guide_legend(override.aes=list(alpha= 1)))
-p + theme_bw()+
+p + theme_bw(16)+
   geom_vline(xintercept = 560, size=0.2)+
   geom_vline(xintercept = 710, size=0.2)+
   geom_vline(xintercept = 1445, size=0.2)+
@@ -101,10 +118,5 @@ p + theme_bw()+
   scale_x_continuous(breaks =c(350, 560, 710, 1445,1890, 2010, 2420, 2500))+
   theme(axis.text.x = element_text(angle=45))
 
-View(spectral.plasticity.list)
-
-spectra_plasticity <- spectral.plasticity.list %>% mutate_if(is.numeric, round, digits=3)
-View(spectra_plasticity)
-merged <- merge(data_group, spectra_plasticity)
 
 write.csv(merged, 'spectra_plasticity_from_blups_v1.csv', row.names = FALSE)

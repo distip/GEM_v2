@@ -8,6 +8,7 @@ library(tidyverse)
 library(viridisLite)
 library(viridis)
 library(grid)
+library(lmerTest)
 
 
 
@@ -716,19 +717,22 @@ colnames(spectra_comb.blups.sub.melt)[4] <- 'Trt'
 
 
 write.csv(spectra_comb.blups.sub.melt, './fullspectra_comb_plots.csv', row.names = FALSE )
-spectra_comb.blups.sub.melt <- read.csv('fullspectra_comb_plots.csv')
+spectra_comb.blups.sub.melt <- read.csv('fullspectra_plots_spatial_cor.csv')
 
 data2 <- data %>% group_by(wavelength, Trt, Group) %>% 
   summarise(mean.ref = mean(value, na.rm=TRUE), sd.ref = sd(value, na.rm = TRUE), se.ref= sd(value, na.rm=TRUE)/sqrt(length(value)), 
             max = max(value, na.rm = TRUE), min = min(value, na.rm = TRUE))
 data2 <- full_join(p_vals,data2)
 
-data <-melt(blups_merged_v2, id.vars = c('PLOT.ID','new_GID', 'het_grp', 'genotype','rows', 'ranges', 'Block' ,'Rep', 'Trt', 'year', 'note', 'Group', 'Calibration', 'ASD'))
+blups_merged_v2 = read_csv('blups_merged_v2')
+
+data <-melt(blups_merged_v2, id.vars = c('PLOT.ID','new_GID', 'genotype','rows', 'ranges', 'Block' ,'Rep', 'Trt', 'year', 'note', 'Group', 'Calibration', 'ASD'))
 a <- sapply(strsplit(as.character(data$variable), '[.]'), '[[', 1)
 data$wavelength <- as.numeric(substr(a,2,5))
 View(data)
 
-                                #########################   t test ###########################
+                              #########################   t test ###########################
+
 
 band <- c(350:2500)
 treatment <- c('HN', 'LN')
@@ -744,6 +748,7 @@ for (i in 1:2) {
   inb <- t.data[t.data$Group == 'Inbred' & t.data$wavelength == j, 'value']
   p <- t.test(hyb, inb ,var.equal= TRUE)$p.value
   p_vals[p_vals$Trt == treatment[i] & p_vals$wavelength == j, 'p'] <- p
+  print(j)
   }
 }
 
@@ -757,16 +762,40 @@ ggplot(p_vals)+
 
 data$wavelength <- as.numeric(data$wavelength)
 
+sign <- c()
+
+for(i in 1:length(data2$p)){
+  p <- data2$p[i]
+  if(p<=0.05){
+    sign <- c(sign, 'significant')
+  }
+  else{
+    sign <- c(sign, 'ns')
+  }
+}
+
+data2$sign <- sign
+data2 <-  data2 %>% relocate(sign , .before = 'Group')
+
+sign
+cols <- c('Hybrid' = 'red', 'Inbred' = 'green', 'ns'= 'white', 'significant'='gray')
 
 plt_blups <- ggplot(data=data2, aes(x=wavelength, group= Group)) +
-  geom_line(aes(y=mean.ref, color=Group), size = 0.6)+
-  geom_ribbon(aes(ymin=max , ymax=min, fill=Group),alpha=0.3)+
-  labs(title = 'Leaf spectra_comb inbred vs hybrids', caption = '**Envelopes represent max and min values')+
-  geom_line(aes(y=p/5), color= 'red', size= 0.3)+
-  scale_y_continuous('reflectance' , sec.axis = sec_axis(~. *5, name = 'p values'))+
-  geom_hline(yintercept = 0.05 , size=0.3 , color='red')+
+  geom_line(aes(y=mean.ref, color=Group), size = 0.5)+
+  scale_color_manual(values = cols)+
+  geom_vline(aes(xintercept = wavelength, color=sign), alpha= 0.1)+
+  xlab('Wavelengths')+
+  ylab('Reflectance')+
+  #geom_ribbon(aes(ymin=max , ymax=min, fill=Group),alpha=0.3)+
+  #labs(caption = '**Envelopes represent max and min values')+
+  #geom_line(aes(y=p/4), color= 'green', size= 0.3)+
+  #scale_y_continuous('reflectance' , sec.axis = sec_axis(~. *4, name = 'p values'))+
+  #geom_hline(yintercept = 0.05/4 , size=0.2 , color='black')+
   facet_grid(Trt ~ . )+
+  theme(panel.background = element_blank(), axis.line = element_line(colour='black'), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), text = element_text(size=18))
   theme_bw(16)
+
+  
   #theme(axis.line.y.right = element_line(color = "red"), 
       #axis.ticks.y.right = element_line(color = "red"),
       #axis.text.y.right = element_text(color = "red"), 
@@ -774,6 +803,8 @@ plt_blups <- ggplot(data=data2, aes(x=wavelength, group= Group)) +
 
 
 plt_blups
+
+
 ggsave(file="test.svg", plot=plt_blups, width=10, height=8)
 
 
@@ -1121,8 +1152,9 @@ View(data)
                                                   
 
                                         ################### Calculating BLUPS for CHL in deifferent Nitrogen TRT ######################
-spectra <- read.csv("Raw_CHL_predicted")
+spectra <- read.csv("Raw_spectrum_merged_predicted_CHL.csv")
 spectra <- spectra[spectra$Group == 'Inbred', ]
+spectra <- spectra %>% select(genotype, Trt, Group, Rep, CHL)
 
 str(spectra)
 
@@ -1130,7 +1162,7 @@ spectra$Rep <- factor(spectra$Rep)
 spectra$genotype <- factor(spectra$genotype)
 spectra$Trt <- factor(spectra$Trt)
 spectra$Group <- factor(spectra$Group)
-spectra$PLOT.ID <- factor(spectra$PLOT.ID)
+#spectra$PLOT.ID <- factor(spectra$PLOT.ID)
 
 View(spectra)
 
@@ -1158,7 +1190,7 @@ View(spectra.list)
 ### contains a different combination of the bands and N. An "H2" column can be added
 ### to store the broad-sense heritability estimates. 
 
-bands <- colnames(spectra)[c(6)]
+bands <- colnames(spectra)[c(5)]
 bands
 
 Trt <- as.character(levels(spectra$Trt))
@@ -1247,13 +1279,6 @@ write.csv(bands.H2, './spectrum_heritabilities.csv', row.names = FALSE)
 write.csv(spectra.blups.list[["HN"]], './spectrum_blups_HN.csv', row.names = FALSE)
 write.csv(spectra.blups.list[["LN"]], './spectrum_blups_LN.csv', row.names = FALSE)
 
-
-### To plot the broad-sense heritabilities for each band, the wavelengths need to be 
-### extracted from the band labels as before.
-
-bands.H2$bands <- as.character(bands.H2$bands)
-bands.H2$bands<- as.numeric(substr(bands.H2$bands,2,5))
-
 ### To plot different lines for each of the different N application, the color can be set to "Trt".
 
 ggplot(bands.H2, aes(y=H2, x=Trt)) + geom_bar(stat='identity')+
@@ -1269,18 +1294,21 @@ names(CHL_blups_LN)[2] <- 'CHL_blups_LN'
 blups_CHL_LN_HN_sperately <- merge(CHL_blups_HN, CHL_blups_LN , by = 'genotype')
 View(blups_CHL_LN_HN_sperately)
 
-write.csv(blups_CHL_LN_HN_sperately, './blups_CHL_LN_HN_seperately.csv')
+write.csv(blups_CHL_LN_HN_sperately, './blups_CHL_LN_HN_seperately.csv', row.names = FALSE)
 
 
+aa <- blups_CHL_LN_HN_sperately %>% melt(id.vars = 'genotype')
 
+aa %>% ggplot(aes(y=value, x=variable))+
+  geom_boxplot(aes(fill=variable))
 
                           ################Calculating Blups for CHL for both trt######################
 View(spectra)
 
 
 ## calculating the BLUPs for spectra
-bands <- (colnames(spectra)[c(12)])
-bands_df <-as.data.frame(colnames(spectra)[c(12)])
+bands <- (colnames(spectra)[c(5)])
+bands_df <-as.data.frame(colnames(spectra)[c(5)])
 bands 
 bands_df$H2 <- NA
 colnames(bands_df) <- c('band', 'H2')
@@ -1294,13 +1322,12 @@ colnames(spectral.blups.list) <- 'genotype'
 
 for(i in 1:length(bands)){
   temp <- spectra
-  temp<-temp[, which(colnames(spectra) %in% c('genotype', 'Block', 'Trt', 'Rep', 'ASD', bands[i]))]
-  colnames(temp)[6] <- 'reflectance'
+  temp<-temp[, which(colnames(spectra) %in% c('genotype', 'Trt', 'Rep', bands[i]))]
+  colnames(temp)[4] <- 'reflectance'
   
-  spectrum.blup.mod<-lmer(reflectance~(1|genotype) + (1|Rep) + (1|Trt) + (1|genotype:Trt), data=temp)
-  
+  spectrum.blup.mod<-lmer(reflectance~(1|genotype) + (1|Rep) + (1|Trt), data=temp)
   Vg <- data.frame(VarCorr(spectrum.blup.mod))$vcov[1]
-  Ve <- data.frame(VarCorr(spectrum.blup.mod))$vcov[5]
+  Ve <- data.frame(VarCorr(spectrum.blup.mod))$vcov[4]
   H2 <- Vg/(Vg+(Ve/2))
   
   bands.H2[which(bands.H2$band==bands[i]), 'H2'] <- H2
