@@ -341,7 +341,6 @@ blups_merged_v2$new_GID <- factor(blups_merged_v2$new_GID)
 
 blups_merged_v2 <- blups_merged_v2[blups_merged_v2$Rep == 2 , ]
 
-
 res.pca <- prcomp(blups_merged_v2[ , 14:length(colnames(blups_merged_v2))], scale = FALSE)
 
 basic_plot <- fviz_pca_ind(res.pca, label= 'none')
@@ -350,6 +349,52 @@ ggplot(cbind(basic_plot$data, blups_merged_v2[, c('Trt', 'note', 'Group')]), aes
   geom_point(aes(shape=Group), size=2)+
   scale_shape_manual(values = c(1,16))+
   labs(title = 'PCA', x='Dim1 (73.8%)', y= 'Dim2 (19.8%)')+
-  stat_ellipse()+
+  #stat_ellipse()+
   theme_bw(14)
 
+ind <- get_pca_ind(res.pca)
+
+view(head(ind$contrib))
+
+
+        ####### Extracting PCs by using Nikee's code ######
+
+
+color <- blups_merged_v2 ##It should be not have any Nas. This is my main dataframe.
+
+PCA <- prcomp(color[,14:length(colnames(blups_merged_v2))]) ##Passing three columns of red, blue and green values. princomp is inbuilt fucntion.
+#color$PC1=PCA$scores[,1] ## Taking first principle component
+#color$PC2=PCA$scores[,2] ## Taking second principle component
+#color$PC3=PCA$scores[,3] ## Taking third principle component
+
+ind <- get_pca_ind(PCA)
+
+PCs <- ind$coord[, 1:3]
+
+PC.for.gwas <- cbind(color[, c('genotype', "Trt")], PCs)
+
+write.csv(PC.for.gwas, 'GWAS_PCA_blups_v2.csv', row.names = FALSE)
+
+View(PC.for.gwas)
+
+              ###### Extracting PCs from first version of blups ######
+
+
+color <- read_csv('spectra_blups.csv') ##It should be not have any Nas. This is my main dataframe. 
+color <- data_frame(color)
+color <- color[which(color$Rep == 1),]
+PCA <- prcomp(color[,13:length(colnames(color))]) ## length(colnames(color)) Passing three columns of red, blue and green values. princomp is inbuilt fucntion.
+#PCA$scores[,1]
+#color$PC1=PCA$scores[,1] ## Taking first principle component
+#color$PC2=PCA$scores[,2] ## Taking second principle component
+#color$PC3=PCA$scores[,3] ## Taking third principle component
+
+ind <- get_pca_ind(PCA)
+
+PCs <- ind$coord[, 1:3]
+
+PC.for.gwas_blups_v1 <- cbind(color[, c('genotype', "Trt")], PCs)
+
+write.csv(PC.for.gwas_blups_v1, 'PC_GWAS_blups_v1.csv', row.names = FALSE)
+
+View(PC.for.gwas_blups_v1)

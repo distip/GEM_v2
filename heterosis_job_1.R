@@ -6,6 +6,9 @@ library(tidyverse)
 library(zoom)
 library(ggforce)
 library(cowplot)
+getwd()
+setwd("/home/schnablelab/deniz/GEM_v2/GEM_v2/")
+
 
 
 blups <- read.csv("spectra_comb_blups_v2.csv")
@@ -91,10 +94,10 @@ for(i in 1:length(mid_LN$genotype)){
 mid_LN$male <- males
 mid_LN <- na.omit(mid_LN)
 
-write_csv(mid_LN, 'mid_LN_v2.csv')
+write.csv(mid_LN, 'mid_LN_v2.csv', row.names = FALSE)
 
 data_mid_LN <- mid_LN[mid_LN$male %in% c("B73", "Mo17"),] %>% group_by(male,bands) %>% 
-  summarise(mean.heterosis = mean(heterosis, na.rm=TRUE), sd.heterosis = sd(heterosis, na.rm = TRUE), se.heterosis= sd(heterosis, na.rm=TRUE)/sqrt(length(heterosis)), 
+  summarise(mean.heterosis = mean(heterosis, na.rm=TRUE), sd.heterosis = sd(heterosis, na.rm = TRUE), se.heterosis= sd(heterosis, na.rm=TRUE)/sqrt(nrow(data_mid_LN)), 
             max = max(heterosis, na.rm = TRUE), min = min(heterosis, na.rm = TRUE))
 
 
@@ -103,13 +106,14 @@ data_mid_LN <- mid_LN[mid_LN$male %in% c("B73", "Mo17"),] %>% group_by(male,band
 ## heterosis calculation for high nitrogen condition
 blups_HN <- blups[blups$Trt == "HN" & blups$Rep == 2 ,]
 
+
 het <- blups_HN %>% filter(grepl(" X ", genotype))
 
 mid_HN <- expand.grid(bands= 350:2500, genotype = het$genotype)
 mid_HN$heterosis <- NA
 
 for(i in 1:length(het$genotype)){
-  for(j in 13:length(colnames(het))){
+  for(j in 14:length(colnames(het))){
     hybrid <- as.character(het$genotype[i])
     female <- strsplit(as.character(het$genotype[i]), " X ")[[1]][1]
     male <- strsplit(as.character(het$genotype[i]), " X ")[[1]][2]
@@ -118,7 +122,7 @@ for(i in 1:length(het$genotype)){
       male2 <- mean(blups_HN[which(blups_HN$genotype == male ), j])
       hybrid2 <- mean(blups_HN[which(blups_HN$genotype == hybrid ), j])
       heterosis <- (hybrid2-mean(c(male2,female2)))/mean(c(male2,female2))*100
-      mid_HN[mid_HN$bands == j+337 & mid_HN$genotype == hybrid , "heterosis"] <- heterosis
+      mid_HN[mid_HN$bands == j+336 & mid_HN$genotype == hybrid , "heterosis"] <- heterosis
       print(i)
       print(j)
     }
@@ -138,7 +142,7 @@ mid_HN <- na.omit(mid_HN)
 
 write_csv(mid_HN, 'mid_HN.csv')
 data_mid_HN <- mid_HN[mid_HN$male %in% c("B73", "Mo17"),] %>% group_by(male,bands) %>% 
-  summarise(mean.heterosis = mean(heterosis, na.rm=TRUE), sd.heterosis = sd(heterosis, na.rm = TRUE), se.heterosis= sd(heterosis, na.rm=TRUE)/sqrt(length(heterosis)), 
+  summarise(mean.heterosis = mean(heterosis, na.rm=TRUE), sd.heterosis = sd(heterosis, na.rm = TRUE), se.heterosis= sd(heterosis, na.rm=TRUE)/sqrt(nrow(data_mid_HN)), 
             max = max(heterosis, na.rm = TRUE), min = min(heterosis, na.rm = TRUE))
 
 ########################   CALCULATION OF lower-PARENT HETEROSIS   #####################################
@@ -151,7 +155,7 @@ low_LN <- expand.grid(bands= 350:2500, genotype = het$genotype)
 low_LN$heterosis <- NA
 
 for(i in 1:length(het$genotype)){
-  for(j in 13:length(colnames(het))){
+  for(j in 14:length(colnames(het))){
     hybrid <- as.character(het$genotype[i])
     female <- strsplit(as.character(het$genotype[i]), " X ")[[1]][1]
     male <- strsplit(as.character(het$genotype[i]), " X ")[[1]][2]
@@ -161,7 +165,7 @@ for(i in 1:length(het$genotype)){
       lower <- min(c(female2, male2))
       hybrid2 <- mean(blups_LN[which(blups_LN$genotype == hybrid ), j])
       heterosis <- (lower-hybrid2)/lower*100
-      low_LN[low_LN$bands == j+337 & low_LN$genotype == hybrid , "heterosis"] <- heterosis
+      low_LN[low_LN$bands == j+336 & low_LN$genotype == hybrid , "heterosis"] <- heterosis
       print(i)
       print(j)
     }
@@ -345,34 +349,35 @@ data_low_LN$Htype <- c(rep('low', length(data_low_LN$bands)))
 
 
 
-plot_data <- data_mid_HN %>% full_join(data_mid_LN) %>% full_join(data_better_HN) %>% full_join(data_better_LN) %>% full_join(data_low_HN) %>%
-  full_join(data_low_LN)
+plot_data <- data_mid_HN %>% full_join(data_mid_LN) # %>% full_join(data_better_HN) %>% full_join(data_better_LN) %>% full_join(data_low_HN) %>%
+  #full_join(data_low_LN)
 
 write.csv(plot_data, 'heterosis_data.csv')
 
 sub_plot_data = plot_data[plot_data$Htype == 'mid',]
 
-theme_set(theme_bw(16))
+theme_set(theme_bw(12))
 p6 <- ggplot(data=sub_plot_data, aes(x=bands, group= male)) +
-  geom_line(data= sub_plot_data[sub_plot_data$Trt == 'HN',], aes( x= bands,y=mean.heterosis, linetype=male, color= Trt),size = 0.7)+
-  geom_ribbon(data= sub_plot_data[sub_plot_data$Trt == 'HN',], aes(ymin=mean.heterosis-se.heterosis , ymax=mean.heterosis+se.heterosis),alpha=0.2)+
-  geom_line(data= sub_plot_data[sub_plot_data$Trt == 'LN',], aes( x= bands,y=mean.heterosis,linetype=male, fill = Trt), size = 0.7)+
-  geom_ribbon(data= sub_plot_data[sub_plot_data$Trt == 'LN',], aes(ymin=mean.heterosis-se.heterosis , ymax=mean.heterosis+se.heterosis, color=Trt),alpha=0.2)+
+  geom_line(data= sub_plot_data[sub_plot_data$Trt == 'HN',], aes( x= bands,y=mean.heterosis),linewidth = 0.7)+
+  geom_ribbon(data= sub_plot_data[sub_plot_data$Trt == 'HN',], aes(ymin=mean.heterosis-sd.heterosis , ymax= mean.heterosis + sd.heterosis),alpha=0.2)+
+  geom_line(data= sub_plot_data[sub_plot_data$Trt == 'LN',], aes( x= bands,y=mean.heterosis), linewidth = 0.7)+
+  geom_ribbon(data= sub_plot_data[sub_plot_data$Trt == 'LN',], aes(ymin=mean.heterosis-sd.heterosis , ymax= mean.heterosis + sd.heterosis),alpha=0.2)+
   scale_x_continuous(breaks =c(350, 550, 710, 1445,1890, 2020, 2410, 2500))+
   theme(axis.text.x = element_text(angle=45))+
-  labs(title = 'Mid-parent Heterosis under HN and LN conditions', caption = '**Envelopes represent 1 se from the mean')
+  facet_grid(Trt ~ male) +
+  labs(title = 'Mid-parent Heterosis under HN and LN conditions', caption = '**Envelopes represent 1 sd from the mean', y='MPH', x='')
 
 p6 +
-  annotate('rect', xmin=350, xmax=750, ymin=-10, ymax=10, alpha= 0.1, fill='blue')+
-  annotate('rect', xmin=750, xmax=2500, ymin=-10, ymax=10, alpha= 0.1, fill='yellow')+
-  annotate('text', x=550, y=9, label= 'Environmentally \n Driven')+
-  annotate('text', x=1500, y=9, label = 'Genetically Driven')+
-  geom_vline(xintercept = 550, size=0.2)+
-  geom_vline(xintercept = 710, size=0.2)+
-  geom_vline(xintercept = 1445, size=0.2)+
-  geom_vline(xintercept = 1890, size=0.2)+
-  geom_vline(xintercept = 2020, size=0.2)+
-  geom_vline(xintercept = 2410, size=0.2)
+  #annotate('rect', xmin=350, xmax=750, ymin=-10, ymax=10, alpha= 0.1, fill='blue')+
+  #annotate('rect', xmin=750, xmax=2500, ymin=-10, ymax=10, alpha= 0.1, fill='yellow')+
+  #annotate('text', x=550, y=9, label= 'Environmentally \n Driven')+
+  #annotate('text', x=1500, y=9, label = 'Genetically Driven')+
+  geom_vline(xintercept = 550, size=0.2, linetype= 'dashed')+
+  geom_vline(xintercept = 710, size=0.2, linetype= 'dashed')+
+  geom_vline(xintercept = 1445, size=0.2, linetype= 'dashed')+
+  geom_vline(xintercept = 1890, size=0.2, linetype= 'dashed')+
+  geom_vline(xintercept = 2020, size=0.2, linetype= 'dashed')+
+  geom_vline(xintercept = 2410, size=0.2, linetype= 'dashed')
 
 
 analysis_mid_LN <- mid_LN[mid_LN$bands %in%  c('550', '710', '1445', '1890', '2020', '2410'),] # %>% distinct(genotype, .keep_all = TRUE)

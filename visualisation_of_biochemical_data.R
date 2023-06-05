@@ -5,7 +5,7 @@ library(reshape2)
 
 
 
-data <- read.csv('Spectrum_with_biochemical_traits_outlier_removal.csv')
+data <- read.csv('Spectrum_with_biochemical_traits.csv')
 colnames(data)[0:25]
 
 data_sub <- subset(data, select = c('PLOT.ID', "X..N" ,"X..P" ,"X..K", "X..S", "X..Ca", "X..Mg", "ppm.Zn", "ppm.Fe", "ppm.Mn",  "ppm.Cu", 
@@ -26,6 +26,17 @@ ggplot(data = melted[melted$Group =='Inbred', ])  +
   theme(axis.ticks= element_blank(), axis.text.y = element_blank(), axis.text.x = element_blank())+
   labs(title= 'Inbreds under HN and LN - After outlier (1.5 IQR)')
 
+ggplot(data = melted[melted$Group =='Inbred', ])  +
+  geom_boxplot(aes(y=value, fill=Trt), alpha=0.3)+
+  theme_bw(14)+
+  facet_wrap(vars(variable), scales = 'free')+
+  theme(axis.ticks= element_blank(), axis.text.y = element_blank(), axis.text.x = element_blank())+
+  labs(title= 'Ground Truth - Inbreds under HN and LN')
 
-
+ggplot(data = melted[melted$Group =='Hybrid', ])  +
+  geom_histogram(aes(x=value, fill=Trt), alpha=0.3)+
+  theme_bw(14)+
+  facet_wrap(vars(variable), scales = 'free')+
+  theme(axis.ticks= element_blank(), axis.text.y = element_blank(), axis.text.x = element_blank())+
+  labs(title= 'Ground Truth - Inbreds under HN and LN')
 
